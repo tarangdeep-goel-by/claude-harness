@@ -71,7 +71,7 @@ the session JSONL. It captures **both** invocation paths:
 
 - model calls the `Skill` tool → `source=auto`
 - user types a `/slash-command` skill → `source=explicit` (the legacy
-  `events.jsonl` counter misses these entirely — it undercounts slash-heavy skills)
+  `workflow.jsonl` counter misses these entirely — it undercounts slash-heavy skills)
 
 ### Sinks
 

@@ -25,7 +25,7 @@ python3 ~/.claude/skills/infra-health/scripts/infra_health.py <days>   # default
   triggers? Lists recent `missed` (matched triggers, nothing fired) + misfire candidates.
   Source: `routing.jsonl`.
 - **Dead skills** — registered (`~/.claude/skills/*/SKILL.md`) but never invoked. Source:
-  `skills.jsonl` ∪ `events.jsonl` (all-time), minus the registry.
+  `skills.jsonl` ∪ `workflow.jsonl` (all-time), minus the registry.
 - **Subagents** — Task/agent invocation frequency. Source: `skills.jsonl` (`kind=agent`).
 - **Daily jobs** — last run, freshness (hours ago), failures. Source: `daily-jobs.jsonl`.
 - **Knowledge drift** — the semantic-memory eval KPI: latest counters + trend across recent runs
@@ -48,7 +48,7 @@ does any work). Full schema: `~/code/claude-harness/vault-scripts/TELEMETRY.md`.
 | `~/vault/logs/hooks.jsonl` | every hook (via `hooklib.sh`) | hook runs + outcome + duration + exit code |
 | `~/vault/logs/skills.jsonl` | `skill_analyzer.py` (session-export, offline) | per-invocation cost + quality: source, output_tokens, tool_calls, errors, correction_next; `kind=agent` for subagents |
 | `~/vault/logs/routing.jsonl` | `skill_analyzer.py` (session-export, offline) | per trigger-matched user turn: verdict (`ok`/`missed`/`misfire`), matched, fired, prompt |
-| `~/vault/logs/events.jsonl` | `tool-telemetry-hook.sh` (PostToolUse `Skill\|Task`) | **legacy** counter — `auto` invocations only; misses `/slash` (explicit) skills. Kept for dead-skill history. |
+| `~/vault/logs/workflow.jsonl` | `tool-telemetry-hook.sh` (PostToolUse `Skill\|Task`) — the merged hook | real-time skill + subagent invocations: `kind` (skill/agent), name, project, args, outcome. The single invocation log (absorbed skill-log-hook + the old events.jsonl). Dead-skill history + invocation audit; also read by workflow-gate + vault-audit. |
 | `~/vault/logs/daily-jobs.jsonl` | `run-daily-jobs.sh` | daily-job success/failure + timing |
 | `~/vault/logs/knowledge-drift-score.jsonl` | `discrepancy-scan.py --score` (weekly, via `/wrap-up`) | semantic-memory drift KPI: ADR-hygiene + KB-freshness + metric-drift + memory counters per run (eval trend); baseline = 2026-07-02 audit |
 | `~/vault/logs/active-sessions/*.json` | `session-marker-hook.sh` | per-session liveness + pushed flag |

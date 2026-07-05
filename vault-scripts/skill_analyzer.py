@@ -13,7 +13,7 @@ Runs in the session-export pipeline (no hot-path cost). For one session it emits
 
 Two invocation paths are both captured:
   1. model calls the Skill tool          → source=auto
-  2. user types a /slash-command skill   → source=explicit  (events.jsonl misses these)
+  2. user types a /slash-command skill   → source=explicit  (workflow.jsonl misses these)
 
 Idempotent: re-running on the same (growing) JSONL dedups by a stable id, so the
 Stop/PreCompact/debounce re-runs never double-count.

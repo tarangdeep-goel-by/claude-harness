@@ -6,7 +6,7 @@ Reads the event sinks under ~/vault/logs and prints a performance report:
   - skills: cost (median output tokens) + quality (correction rate) + auto/explicit (skills.jsonl)
   - routing adherence: ok/missed/misfire on trigger-matched turns (routing.jsonl)
   - subagents: invocation frequency (skills.jsonl kind=agent)
-  - dead skills: registry minus ever-invoked (skills.jsonl ∪ legacy events.jsonl)
+  - dead skills: registry minus ever-invoked (skills.jsonl ∪ workflow.jsonl real-time)
   - daily jobs: last run + freshness + failures (daily-jobs.jsonl)
   - sessions: live vs unpushed (active-sessions/)
   - recent errors (warm-start-errors.log)
@@ -170,9 +170,9 @@ seen = set(skl.keys())
 for d in read_jsonl(f"{LOGS}/skills.jsonl"):      # all-time, ignore window
     if d.get("kind") != "agent":
         seen.add(d.get("skill"))
-for d in read_jsonl(f"{LOGS}/events.jsonl"):      # legacy sink
-    if d.get("kind") == "skill":
-        seen.add(d.get("name"))
+for d in read_jsonl(f"{LOGS}/workflow.jsonl"):    # real-time invocation sink (merged tool-telemetry hook)
+    if d.get("kind") in ("skill", "agent"):
+        seen.add(d.get("skill") or d.get("name"))
 dead = sorted(reg - seen)
 print("\n## Dead skills (registered, never invoked)")
 print("  " + (", ".join(dead) if dead else "(none — every registered skill has been used)"))

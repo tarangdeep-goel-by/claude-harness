@@ -94,7 +94,7 @@ the live file = edit the repo). Lifecycle hooks (all bash in `~/vault/scripts`):
   context), persist-env.
 - **PreToolUse:** file-guard (block .env/keys/credentials), block-dangerous (rm -rf, force-push…).
 - **PermissionRequest:** auto-allow Read/Glob/Grep, allow-python.
-- **PostToolUse:** tool-telemetry (Skill/Task → events.jsonl), auto-test.
+- **PostToolUse:** tool-telemetry (Skill/Task → workflow.jsonl), auto-test.
 - **SubagentStart:** inject coding conventions into subagents.
 - **PreCompact:** export full transcript before summarization.
 - **Stop:** completion-check (catch stubs), auto-checkpoint (git stash), session-export

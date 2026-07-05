@@ -92,7 +92,7 @@ PreCompact ────> [precompact-hook.sh]     Export transcript before trunc
 Stop ──────────> [completion-check-hook.sh] Scan for placeholder/stub code
                  [session-export-hook.sh]   Export session to markdown
                  [session-marker-hook.sh]   Liveness heartbeat + pushed flag
-                 [tool-telemetry-hook.sh]   Skill/subagent telemetry → events.jsonl
+                 [tool-telemetry-hook.sh]   Skill/subagent telemetry → workflow.jsonl
 ```
 
 ### Hook Scripts Reference

@@ -5,7 +5,9 @@
 # Contract:
 #   - Scan memory/*.md (skip legacy/, MEMORY.md, SCHEMA.md, dotfiles). Cap 150 files.
 #   - STALENESS: confidence==high AND age>90 (age = today - last_verified).
-#     Also flag missing last_verified on a frontmattered file.
+#     (Files without last_verified are pre-migration/untracked, NOT stale — they
+#     skip staleness but are still checked for OVERLAP. The write-time validator
+#     and the S3 migration backfill last_verified going forward.)
 #   - OVERLAP: Jaccard > 0.5 over name+description tokens → flag both.
 #   - Append ONE json line per flag to ~/vault/memory-review-queue.jsonl.
 #   - Debounce per slug via ~/vault/logs/memory-staleness-state.json (7-day window,
@@ -220,12 +222,7 @@ for p in files:
 for r in records:
     slug = r["slug"]
     if not r["last_verified"]:
-        if should_flag(slug):
-            emit(slug, "missing-last_verified",
-                 "Frontmatter present but no last_verified date — re-verify and stamp, or drop frontmatter.",
-                 r["confidence"], r["mtype"], r["name"])
-            mark_flagged(slug)
-        continue
+        continue  # pre-migration/untracked — not stale; still eligible for OVERLAP below
     if r["confidence"] == "high" and r["age"] is not None and r["age"] > 90:
         if should_flag(slug):
             emit(slug, "stale-90d",
