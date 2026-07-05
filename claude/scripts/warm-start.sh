@@ -501,14 +501,8 @@ gather_prs() {
 
 gather_sessions() {
   local marker="$HOME/vault/scripts/session-marker-hook.sh"
-  local vault="$HOME/Documents/vault-work"
-  local today; today=$(date +%F)
 
-  # First session of the day? (no day marker yet) → nudge toward /start-work
-  if [ ! -f "$vault/System/handoffs/$today/_day-started.json" ]; then
-    emit_section "▶ First session today"
-    emit "No day marker for $today — consider running \`/start-work\` (runs daily jobs + carry-over)."
-  fi
+  # (Day-marker /start-work nudge removed — PM-vault feature; not used in dev/in-repo mode.)
 
   # Other live sessions (parallel work in flight), excluding this one
   if [ -x "$marker" ]; then
@@ -544,7 +538,7 @@ gather_kb_freshness() {
   # absent), matching the "daily" cadence; skipped on compact/resume. Emits ONLY when
   # something is actually stale — stays silent when all KBs are within horizon (no noise).
   if [ "$SESSION_SOURCE" = "compact" ] || [ "$SESSION_SOURCE" = "resume" ]; then return; fi
-  local vault="$HOME/Documents/vault-work"
+  local vault="$PROJECT_DIR"
   local today; today=$(date +%F)
   [ -f "$vault/System/handoffs/$today/_day-started.json" ] && return
   [ -f "$vault/System/scripts/discrepancy-scan.py" ] || return

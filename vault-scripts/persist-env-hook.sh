@@ -21,21 +21,6 @@ fi
 
 CWD=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('cwd',''))" 2>/dev/null || pwd)
 
-# ── Data tool credentials ────────────────────────────────────────────────
-DATA_TOOLS_ENV="$HOME/.claude/.env.data-tools"
-if [ -f "$DATA_TOOLS_ENV" ]; then
-  # Source and re-export to CLAUDE_ENV_FILE so all Bash calls (including subagents) inherit
-  while IFS= read -r line; do
-    # Skip comments and empty lines
-    [[ "$line" =~ ^[[:space:]]*# ]] && continue
-    [[ -z "${line// }" ]] && continue
-    # Only export lines that have a non-empty value (skip placeholder lines with ="")
-    if [[ "$line" =~ ^export\ ([A-Z_]+)=\"(.+)\"$ ]]; then
-      echo "$line" >> "$CLAUDE_ENV_FILE"
-    fi
-  done < "$DATA_TOOLS_ENV"
-fi
-
 # ── Docker defaults ──────────────────────────────────────────────────────
 echo 'export DOCKER_BUILDKIT=1' >> "$CLAUDE_ENV_FILE"
 echo 'export COMPOSE_DOCKER_CLI_BUILD=1' >> "$CLAUDE_ENV_FILE"

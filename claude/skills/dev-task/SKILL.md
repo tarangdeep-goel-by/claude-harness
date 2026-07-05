@@ -9,11 +9,6 @@ description: "Run a code change end-to-end in an isolated git worktree: branch �
 so the N parallel sessions you run never corrupt each other's working tree. We always test →
 PR → check CI → merge on remote.
 
-**Precedence:** if the change is Stable Flutter UI work (widgets/screens/pages/sheets in
-`~/code/stable-flutter`) and a `flutter-dev` skill is installed, **that skill owns the build
-workflow** (playbook gates, Figma flow) — this skill still supplies the worktree → PR → CI → merge
-spine underneath it. Everything else in `~/code/*` routes here directly.
-
 ## Inputs
 - **repo** (under `~/code/`), **goal** (one line), optional **branch slug**.
 - If unclear, ask. Derive `<slug>` (kebab) and `<type>` ∈ `feature|fix|analysis|chore`.
@@ -44,9 +39,6 @@ cd "$WT"
 
 ### 3. Build
 - Make the change in `$WT`. Follow the repo's conventions (read its CLAUDE.md if present).
-- **Lib changes:** if the change is in `~/code/sm-analytics`, remember consumers pip-install it
-  SHA-pinned (e.g. comms-automation) — a consuming repo needs a SHA bump PR after this merges.
-  See [[reference-comms-dev-env]]. Flag this in the handoff.
 
 ### 4. Verify locally (before pushing)
 - Run the repo's tests (detect: `pytest`, `npm test`, etc.; ask if ambiguous).

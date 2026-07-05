@@ -6,17 +6,33 @@ set -euo pipefail
 
 INPUT=$(cat)
 
-# Extract tool name and file path
+# Extract tool name, direct file path, and Bash command if present
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // ""')
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.path // ""')
+# NOTE: do not name this var BASH_COMMAND — it is a bash special variable that
+# reflects the currently-executing line, not the user's command.
+CMD=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
 
-# Fast exit: only check file-related tools
+# Fast exit: only check file-related tools and Bash
 case "$TOOL_NAME" in
-  Read|Write|Edit) ;;
+  Read|Write|Edit|Bash) ;;
   *) exit 0 ;;
 esac
 
-# Fast exit: no file path
+# For Bash, block common secret-read patterns before the direct file checks below.
+if [ "$TOOL_NAME" = "Bash" ]; then
+  if echo "$CMD" | grep -qE '(^|[[:space:]])(cat|less|more|head|tail|sed|awk|grep|rg|bat|nl|python3?|ruby|node)[[:space:]].*(\.env([[:alnum:]_.-]*)?|id_(rsa|ed25519|ecdsa|dsa)|\.ssh/|\.gnupg/|\.aws/(credentials|config)|\.docker/config\.json|\.kube/config|service-account[^[:space:]]*\.json)'; then
+    LOG_FILE="$HOME/vault/logs/workflow.jsonl"
+    mkdir -p "$(dirname "$LOG_FILE")"
+    printf '{"ts":"%s","skill":"hook:file-guard","project":"workspace","task":"blocked Bash secret-read pattern"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LOG_FILE"
+    jq -n --arg reason "🛡️ File Guard: blocked Bash command that appears to read sensitive files" '{"decision": "deny", "reason": $reason}'
+    exit 0
+  fi
+  # Bash tool isn't reading a secret file pattern → nothing else to check
+  exit 0
+fi
+
+# Fast exit: no file path for direct file tools
 [ -z "$FILE_PATH" ] && exit 0
 
 # Normalize: expand ~ and resolve to basename for pattern matching

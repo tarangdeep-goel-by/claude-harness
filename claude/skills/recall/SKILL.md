@@ -17,15 +17,15 @@ Search past Claude Code sessions, notes, and daily entries from the local vault.
 
 | The ask | Mode |
 |---|---|
-| "Where were we" / catch up on a project | **0** — `/recall <project>` |
+| "Where were we" / catch up on the cwd repo | **0** — `/recall` (in-repo files, no qmd) |
 | "What happened yesterday / last week / on <date>" | **temporal** (1 / 1b) |
-| "What do we know about <topic>" | **topic** (qmd search) |
+| "What do we know about <topic>" | **topic** (qmd over `~/vault/sessions`) |
 | "What links to / relates to <note, person, metric>" | **graph** |
-| "What worked / what didn't" | lens: **retro** |
-| "Why did we choose X" | lens: **decisions** |
-| "What's unfinished / dropped" | lens: **gaps** |
-| "What keeps recurring" | lens: **patterns** |
-| "Restore everything to resume paused work" | lens: **context** |
+| "What worked / what didn't" | lens: **retro** (qmd) |
+| "Why did we choose X" | lens: **decisions** (in-repo ADRs first, then qmd) |
+| "What's unfinished / dropped" | lens: **gaps** (qmd) |
+| "What keeps recurring" | lens: **patterns** (qmd) |
+| "Restore everything to resume paused work" | lens: **context** (in-repo ARC/LOG first, then qmd) |
 
 ## Modes
 
@@ -38,7 +38,7 @@ This is how a **work session starts**: catch me up on where a thread was left. T
   1. The **newest per-session handoff for the project** — glob `System/handoffs/**/*.md` and pick
      the most recent whose `project:` frontmatter matches (this is the deepest current-state
      snapshot). Handle **both** handoff shapes (see below).
-  2. The **latest `Notes/<project>/PROJECT_LOG.md` entry** (history/depth — the newest
+  2. The **latest `$PROJECT_DIR/Notes/<repo-name>/PROJECT_LOG.md` entry** (history/depth — the newest
      `## YYYY-MM-DD · …` heading — uniform H2, per the merged vault-push convention).
   3. The project's **section of `System/handoffs/RESUME.md`** *if the board exists* (the L0
      current-state pointer — read it first when present; it's the fastest "where's the thread now").
@@ -98,13 +98,13 @@ Map the request to the right granularity:
 
 | Ask | What to read |
 |-----|--------------|
-| `recall last session [project]` | Newest `~/Documents/vault-work/System/handoffs/<date>/<sid>.md` (filter by `project:` frontmatter if a project is named). |
+| `recall last session [project]` | Newest `$PROJECT_DIR/System/handoffs/<date>/<sid>.md` (filter by `project:` frontmatter if a project is named). |
 | `recall <date>` / `recall yesterday` | That day's `System/handoffs/<date>/_day.md` rollup (fall back to the per-session files if no rollup yet). |
 | `recall last week` (all projects) | Compute on demand: read all `_day.md` (or session handoffs) in the date range + `qmd query` sessions. (No materialized weekly digest — that tier was retired.) |
-| `recall last week <project>` | **Slice** `Notes/<project>/PROJECT_LOG.md` by the `## YYYY-MM-DD · …` headings in range + the project's session handoffs in range. (`grep -E '^##+ [0-9]{4}-'` tolerates legacy `###` entries when slicing.) |
-| `recall context <project>` / "span of the project" | `Notes/<project>/PROJECT_ARC.md` (the throughline) + the full `PROJECT_LOG.md`. |
+| `recall last week <project>` | **Slice** `$PROJECT_DIR/Notes/<repo-name>/PROJECT_LOG.md` by the `## YYYY-MM-DD · …` headings in range + the project's session handoffs in range. (`grep -E '^##+ [0-9]{4}-'` tolerates legacy `###` entries when slicing.) |
+| `recall context <project>` / "span of the project" | `$PROJECT_DIR/Notes/<repo-name>/PROJECT_ARC.md` (the throughline) + the full `PROJECT_LOG.md`. |
 | `recall <entity>` (a person/metric/product/tool) | Read the canonical note in `People/` or `Glossary/` FIRST (the definition), then `qmd query` for everything linking it. |
-| `recall decisions <topic>` | `Notes/*/decisions/*.md` (ADRs) + the `decisions` lens. |
+| `recall decisions <topic>` | `$PROJECT_DIR/Notes/<repo-name>/decisions/*.md` (in-repo ADRs) + the `decisions` lens. |
 
 **Entity-first + aliases:** for a person/metric/product/tool, the canonical `People/`/`Glossary/`
 note is the answer's spine — read it first, then fan out to mentions. Entity notes carry an
@@ -318,14 +318,14 @@ Found 5 sessions matching "authentication" (2 this week, 3 older)
 
 ## Notes
 
-- Vault location: `~/vault/` (sessions) + `~/Documents/vault-work/` (PM knowledge vault)
+- Vault location: in-repo project knowledge at `$PROJECT_DIR/System/handoffs/` + `$PROJECT_DIR/Notes/<repo-name>/` (where `$PROJECT_DIR` = `git rev-parse --show-toplevel` and `<repo-name>` = its basename lowercased); runtime session archive at `~/vault/sessions/` (qmd-indexed).
 - Sessions are markdown files with YAML frontmatter
 - QMD collections vary by machine/vintage — **run `qmd collection list` FIRST and use only names
   that exist.** Do NOT guess variants: an unknown `-c` errors out and **silently drops that source**
   from the search (the project CLAUDE.md documents this trap — e.g. on the main work vault there is
   NO `daily` collection; the daily journal is `work-daily`). Known name pairs across machines:
   `daily`↔`work-daily` (daily journal), `notes`↔`vault-notes` (permanent notes),
-  `plans`↔`claude-plans` (plan-mode outputs); plus `sessions`, `projects` (`Notes/<project>/` —
+  `plans`↔`claude-plans` (plan-mode outputs); plus `sessions`, `projects` (`$PROJECT_DIR/Notes/<repo-name>/` —
   PROJECT_LOG/ARC/research), `handoffs` (`System/handoffs/**`), `glossary`, `people`, `meta`. Use
   `-c projects` for PROJECT_LOG/ARC/research, `-c handoffs` for handoffs, `-c glossary -c people`
   for entities.

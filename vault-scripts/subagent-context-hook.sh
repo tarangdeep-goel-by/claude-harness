@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Code SubagentStart hook: inject project conventions + data tool context into every subagent.
+# Claude Code SubagentStart hook: inject project conventions into every subagent.
 set -euo pipefail
 
 INPUT=$(cat)
@@ -22,24 +22,6 @@ if [ -n "$CWD" ] && [ -f "$CWD/CLAUDE.md" ]; then
 ## Project Rules (from CLAUDE.md)
 $PROJECT_HINTS"
   fi
-fi
-
-# Data tool context for vault-work project
-if [[ "${CWD:-}" == *"vault-work"* ]]; then
-  CONTEXT+="
-
-## Data Analysis Context (auto-injected for vault-work)
-
-**MANDATORY:** Before writing ANY Mixpanel query, Metabase query, or analysis script, you MUST first read the relevant SKILL.md file. The skills contain the canonical gotchas, event naming rules, table routing, and common-mistakes checklists. Skipping them causes silent wrong results.
-
-- Mixpanel work → \`Read('.claude/skills/mixpanel-analytics/SKILL.md')\`
-- Metabase work → \`Read('.claude/skills/metabase-query/SKILL.md')\`
-
-The SKILL.md files link to deeper reference files (\`references/*\`) — follow those links when the skill points to them.
-
-**Env vars pre-loaded:** \`MB_API_KEY\`, \`MP_SESSIONID\`, \`MP_CSRFTOKEN\`.
-
-**Scripts:** reuse patterns from \`Notes/<project>/scripts/\`. Save new scripts there — never throwaway inline code. Every script must include a sanity-check block (row counts, null checks, totals, date range)."
 fi
 
 # Output as hook JSON

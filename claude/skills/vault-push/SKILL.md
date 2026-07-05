@@ -30,11 +30,13 @@ against THIS conversation before using it — does the marker's goal/project mat
 actually did? A mismatched SID silently clobbers a parallel session's handoff. If it doesn't match,
 use the `manual-…` fallback instead of a wrong live SID.
 
-- **Project mode** — if `$PWD` is under `~/Documents/vault-work/Notes/<project>`, OR is a code
-  repo listed in `~/Documents/vault-work/System/repo-map.yaml` (maps `~/code/<repo>` → a vault
-  project). Resolve `<project>` from the path or the map. If the repo isn't mapped, ask the user
-  which project it belongs to (and offer to add it to `repo-map.yaml`).
-- **Default mode** — anywhere else.
+- **Project mode** — if `$PWD` is inside a git repo (i.e. `git rev-parse --show-toplevel`
+  succeeds). Set `PROJECT_DIR="$(git rev-parse --show-toplevel)"` and
+  `REPO_NAME="$(basename "$PROJECT_DIR" | tr '[:upper:]' '[:lower:]')"`. Structured project
+  knowledge lives in-repo at `$PROJECT_DIR/System/handoffs/` and `$PROJECT_DIR/Notes/<repo-name>/`
+  (the same `<repo-name>` convention `warm-start.sh` uses). If `$PROJECT_DIR/Notes/<repo-name>/`
+  doesn't exist yet, `mkdir -p` it. Treat `<repo-name>` as `<project>` everywhere below.
+- **Default mode** — anywhere else (no git repo).
 
 ---
 
@@ -44,15 +46,15 @@ Write these, in order. Each is **session-scoped or project-scoped** — never a 
 (that's `/wrap-up`'s job), so parallel sessions don't clobber.
 
 ### a) Session handoff (session-scoped — always)
-- Path: `Notes/.../System/handoffs/<date>/<SID>.md` → i.e.
-  `~/Documents/vault-work/System/handoffs/$(date +%F)/<SID>.md`.
+- Path: `$PROJECT_DIR/System/handoffs/<date>/<SID>.md` → i.e.
+  `$PROJECT_DIR/System/handoffs/$(date +%F)/<SID>.md`.
 - `mkdir -p` the dated folder first.
 - Fill from `System/templates/session-handoff.md`: frontmatter (`session_id, date, project,
   type, branch, worktree, goal, status, pr`) + body (did / decisions / state-now / open-threads
   / artifacts). Keep it tight — this is the resume point, not a transcript.
 
 ### b) PROJECT_LOG entry (project-scoped — always)
-- Append to `Notes/<project>/PROJECT_LOG.md` a **sliceable** dated entry. **Header convention:
+- Append to `$PROJECT_DIR/Notes/<repo-name>/PROJECT_LOG.md` a **sliceable** dated entry. **Header convention:
   uniform `## YYYY-MM-DD` (H2) — do NOT use `###`** (the earlier `###`-vs-`##` mix caused a
   miscount; all logs are normalized to `##`). Carry the sliceable metadata in the same heading
   line after the date:
@@ -66,27 +68,27 @@ Write these, in order. Each is **session-scoped or project-scoped** — never a 
   newest-first with **bold** sub-labels. Entry count = `grep -cE '^## [0-9]{4}-[0-9]{2}-[0-9]{2}'`.
 
 ### c) README (project-scoped — only if state changed)
-- Update `Notes/<project>/README.md` status/overview only if this session changed the project's
+- Update `$PROJECT_DIR/Notes/<repo-name>/README.md` status/overview only if this session changed the project's
   current state. Don't churn it every session.
 
 ### d) PROJECT_ARC (project-scoped — only on a trajectory change)
-- Update `Notes/<project>/PROJECT_ARC.md` **only** if this session moved a phase boundary, made
+- Update `$PROJECT_DIR/Notes/<repo-name>/PROJECT_ARC.md` **only** if this session moved a phase boundary, made
   a pivot, or changed the current frontier. Add a dated line under "Key pivots" / advance
   "Phases" / rewrite "Current frontier". Most sessions touch nothing here.
 
 ### e) Research links + entity linking + decisions
-- If analysis produced a research doc (`Notes/<project>/research/<topic>.md`), make sure the
+- If analysis produced a research doc (`$PROJECT_DIR/Notes/<repo-name>/research/<topic>.md`), make sure the
   handoff and PROJECT_LOG entry link it.
 - **Link canonical entities:** in the handoff/log/research, link any person, metric, product, or
-  tool that has a `People/` or `Glossary/` note (`[[K-factor]]`, `[[Mixpanel]]`, `[[Saurabh Jain]]`).
+  tool that has a `People/` or `Glossary/` note (e.g. `[[some-person]]`, `[[some-metric]]`, `[[some-tool]]`).
   If a recurring entity has no note yet, create one from `System/templates/entity.md`.
 - **Decisions are vault-push-owned — capture them as ADRs.** If this session made a real decision
-  (architecture, approach, scope, tool), YOU write `Notes/<project>/decisions/NNNN-<slug>.md` from
+  (architecture, approach, scope, tool), YOU write `$PROJECT_DIR/Notes/<repo-name>/decisions/NNNN-<slug>.md` from
   `System/templates/decision-record.md` at session end (the L2 "why" peel) — don't leave the
   rationale only in prose, and don't defer it to `/wrap-up`. Number sequentially per project.
 
 ### f) Open Items — project-level (vault-push OWNS) + global inbox
-**Project todos → `Notes/<project>/OPEN_ITEMS.md` — you own this, write it directly.** Per touched
+**Project todos → `$PROJECT_DIR/Notes/<repo-name>/OPEN_ITEMS.md` — you own this, write it directly.** Per touched
 project: **add** new todos surfaced this session, **tick done** (`- [x]`) anything resolved,
 **carry** the rest. It's project-scoped (one writer) so this is parallel-safe — no inbox
 indirection. Create it from `System/templates/project-open-items.md` if absent.
@@ -157,7 +159,7 @@ does not extend to session-level pushes. Stage explicitly:
    (non-fast-forward), re-run the pull-rebase-push line. Leave other sessions' files untouched.
 4. **Clean up** any scratch you created outside the vault (temp scripts in the scratchpad are fine
    to leave; don't delete other sessions' artifacts).
-5. **Sweep worktrees** — if this session touched a `~/code` dev repo, sweep managed worktrees
+5. **Sweep worktrees** — if this session touched a code repo you've been working in, sweep managed worktrees
    **after** committing/merging this session's repo work:
    ```bash
    tools/worktree.sh clean        # all enforced repos (or `clean <repo>` for one)
@@ -167,13 +169,13 @@ does not extend to session-level pushes. Stage explicitly:
    `wt/*` branch. Anything dirty, unmerged, or hand-made is **reported, never deleted**, so its
    report doubles as a "still-open repo work" reminder — eyeball it before finishing. Never
    `rm -rf` a worktree by hand (strands git's admin refs) — use `tools/worktree.sh rm` / `clean`.
-   Skip only if no `~/code` repo was touched this session (or the vault has no `tools/worktree.sh`).
+   Skip only if no code repo was touched this session (or the repo has no `tools/worktree.sh`).
 
 ### h) Mark pushed + reindex
 ```bash
 touch ~/vault/logs/active-sessions/$SID.pushed   # clears the "unpushed" warning at next start
 qmd update && qmd embed
-echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","skill":"vault-push","mode":"project","project":"<project>","sid":"'$SID'"}' >> ~/vault/logs/workflow.jsonl
+echo '{"ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","skill":"vault-push","mode":"project","project":"<repo-name>","sid":"'$SID'"}' >> ~/vault/logs/workflow.jsonl
 ```
 
 If `qmd` is missing or errors, don't fail the push — the commit is the durable artifact; note "qmd reindex skipped" in the confirmation and move on (next `/start-work` or a manual `qmd update` catches it up).
@@ -191,18 +193,18 @@ re-pointed at the per-session/`_day.md` architecture:
 - [ ] README.md status updated if state changed (step c)
 - [ ] PROJECT_ARC.md updated only on a trajectory change (step d)
 - [ ] Research links wired + canonical entities linked ([[…]]) (step e)
-- [ ] Decisions (if any) peeled into ADRs → Notes/<project>/decisions/NNNN-<slug>.md (step e)
-- [ ] Project todos written to `Notes/<project>/OPEN_ITEMS.md` (add/tick/carry — vault-push owns it);
+- [ ] Decisions (if any) peeled into ADRs → $PROJECT_DIR/Notes/<repo-name>/decisions/NNNN-<slug>.md (step e)
+- [ ] Project todos written to `$PROJECT_DIR/Notes/<repo-name>/OPEN_ITEMS.md` (add/tick/carry — vault-push owns it);
       cross-cutting todos appended to the GLOBAL Open Items `## Inbox (unsorted)` (step f)
 - [ ] RESUME board updated — `python3 tools/resume_board.py update --project …` per touched
       project (primary last, so it wins last_touched); skip if the writer is absent (step f2)
 - [ ] Git commit — explicit paths only, NEVER `git add -A`; rebase-first push to origin (step g)
 - [ ] Worktrees swept — `tools/worktree.sh clean` (removes merged+clean; reports dirty/unmerged —
-      eyeball it) if a ~/code repo was touched (step g)
+      eyeball it) if a code repo was touched (step g)
 - [ ] `touch …/$SID.pushed` + `qmd update && qmd embed` + workflow.jsonl line (step h)
 ```
 
-> **Two Open-Items scopes.** vault-push **owns** each project's `Notes/<project>/OPEN_ITEMS.md`
+> **Two Open-Items scopes.** vault-push **owns** each project's `$PROJECT_DIR/Notes/<repo-name>/OPEN_ITEMS.md`
 > (writes/ticks/carries directly — parallel-safe because it's project-scoped, like PROJECT_LOG). For
 > the GLOBAL `Open Items.md` it only *appends* to `## Inbox (unsorted)` (+ may tick-done a resolved
 > item); the day-end `/wrap-up` is the sole writer that reconciles the global inbox into the

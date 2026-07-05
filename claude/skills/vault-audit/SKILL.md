@@ -38,13 +38,15 @@ tool) — transcripts' `<command-name>` tags do.
 Count from the transcripts:
 
 ```bash
-# Skill-tool invocations, ranked (all sessions for this project):
-grep -oh '"skill":"[^"]*"' ~/.claude/projects/-Users-user-Documents-vault-work/*.jsonl \
+# Skill-tool invocations, ranked (all sessions for this project).
+# Find your project slug: ls ~/.claude/projects/  (Claude Code encodes the cwd
+# as a slug like -Users-...-<repo>). Glob all if you don't care about scoping:
+grep -oh '"skill":"[^"]*"' ~/.claude/projects/*/*.jsonl \
   | sort | uniq -c | sort -rn
 
 # User-typed slash commands (commands inject as prompts, so they show 0 Skill
 # calls by design — count them separately, don't flag them as "skipped"):
-grep -oh '<command-name>[^<]*' ~/.claude/projects/-Users-user-Documents-vault-work/*.jsonl \
+grep -oh '<command-name>[^<]*' ~/.claude/projects/*/*.jsonl \
   | sort | uniq -c | sort -rn
 ```
 
@@ -63,8 +65,8 @@ cat ~/vault/logs/workflow.jsonl | grep -E 'vault-push|learning-detector' | tail 
 
 **Skill invocation counts** (from transcripts, for the time period) — rank every
 skill that fired, and explicitly list which configured skills had ZERO
-invocations (dormant). Distinguish situational-but-valid (flutter-dev,
-capture-journey, export, sm-design-system) from genuinely abandoned.
+invocations (dormant). Distinguish situational-but-valid (e.g. `flutter-dev`,
+`docs-gen`, `export`, `design-system`) from genuinely abandoned.
 
 **Vault push health:**
 - Last completion note push: <date> (<project>)

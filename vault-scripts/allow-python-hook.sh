@@ -20,9 +20,3 @@ if [[ "$CMD" =~ ^qmd\  ]]; then
   echo '{"decision":"allow"}'
   exit 0
 fi
-
-# Allow curl to Metabase and Mixpanel (data analysis APIs)
-if [[ "$CMD" =~ curl.*metabase\.stablemoney\.in ]] || [[ "$CMD" =~ curl.*mixpanel\.com ]]; then
-  echo '{"decision":"allow"}'
-  exit 0
-fi

@@ -58,7 +58,7 @@ Learnings are stored in `~/vault/learnings-queue.jsonl`. Each line is a JSON obj
 1. Show pending learnings (as above) if not already shown
 2. Ask user which learning to apply (by number)
 3. Ask user to confirm the target file:
-   - **Project-specific convention** → the project's own `CLAUDE.md` (whatever repo the learning came from — e.g. `~/Documents/vault-work/CLAUDE.md` for the PM vault; there is no standard `~/Documents/Projects/` layout)
+   - **Project-specific convention** → the project's own `CLAUDE.md` (whatever repo the learning came from — e.g. `~/Documents/Projects/<project>/CLAUDE.md` for a code repo's CLAUDE.md)
    - **Global workflow convention** → `~/.claude/CLAUDE.md`
    - **Skill-specific** → `~/.claude/skills/<skill>/SKILL.md`
 4. **Check for conflicts**: Read the target file and check if the proposed learning contradicts an existing rule. If so, flag the conflict and ask user how to resolve.
