@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Code PreToolUse hook: enforce per-task git WORKTREES for shared ~/code repos.
+# Claude Code PreToolUse hook: enforce per-task git WORKTREES for shared dev repos.
 #
 # Why: multiple chats edit the same repos in parallel. Editing the SHARED PRIMARY
 # checkout means one chat's WIP (and a stray `git add -A`) clobbers another's.
