@@ -1,0 +1,16 @@
+# This repo holds ONLY canonical harness files. Secrets and machine state live in
+# ~/.claude / ~/vault (outside this repo) and are never copied here — but guard anyway.
+.DS_Store
+*.log
+**/__pycache__/
+*.pyc
+
+# Never commit credentials, even if one is accidentally copied in.
+*.env
+.env*
+*secret*
+!SECRETS.example.md
+*-sa.json
+*auth*.json
+*.pem
+*.key

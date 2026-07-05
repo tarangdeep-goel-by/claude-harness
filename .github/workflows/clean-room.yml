@@ -1,0 +1,27 @@
+name: clean-room
+# Distribution gate: a fresh adopter install + update must reconcile cleanly, or the change
+# doesn't merge. This is what makes "push an update and adopters pull it" safe.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  clean-room:
+    # Test on BOTH the CI default (ubuntu) AND the real target OS (macOS) — launchd,
+    # BSD stat/sed/date, and bash 3.2 differences only surface on macos-latest.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install deps the harness assumes (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq jq rsync
+      - name: Hooks survive + safety hooks block/allow
+        run: bash tests/hooks-smoke.sh
+      - name: Fresh-machine install + update reconcile
+        run: bash tests/clean-room.sh

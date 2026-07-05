@@ -1,0 +1,236 @@
+{
+  "env": {
+    "ENABLE_PROMPT_CACHING_1H": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Write",
+      "Edit",
+      "Bash",
+      "Read",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "mcp__pencil"
+    ],
+    "additionalDirectories": [
+      "/Users/user/code"
+    ]
+  },
+  "model": "opus[1m]",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/file-guard-hook.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/block-dangerous-hook.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/skill-log-hook.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/worktree-guard-hook.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Skill|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/tool-telemetry-hook.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/skill-router-hook.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "Read|Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"decision\":\"allow\"}'",
+            "timeout": 2
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/allow-python-hook.sh",
+            "timeout": 3
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"decision\":\"allow\"}'",
+            "timeout": 2
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/precompact-hook.sh",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/session-marker-hook.sh touch",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "~/vault/scripts/completion-check-hook.sh",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "~/vault/scripts/auto-checkpoint-hook.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "~/vault/scripts/session-export-hook.sh",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/subagent-context-hook.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/session-marker-hook.sh start",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/warm-start.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "~/vault/scripts/persist-env-hook.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "swift-lsp@claude-plugins-official": true,
+    "figma@claude-plugins-official": true
+  },
+  "sandbox": {
+    "filesystem": {
+      "allowWrite": [
+        "/Users/user/code",
+        "/Users/user/Documents/vault-work"
+      ],
+      "allowRead": [
+        "/Users/user/code",
+        "/Users/user/Documents/vault-work"
+      ]
+    }
+  },
+  "syntaxHighlightingDisabled": false,
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "xhigh",
+  "autoUpdatesChannel": "latest",
+  "voice": {
+    "enabled": false,
+    "mode": "hold"
+  },
+  "skipWorkflowUsageWarning": true,
+  "editorMode": "normal",
+  "verbose": true,
+  "skipAutoPermissionPrompt": true,
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "Always allow any read-only operation: Read, Glob, Grep, WebFetch, WebSearch, MCP read tools, and read-only Bash commands (cat, head, tail, less, more, ls, find, file, stat, du, df, wc, awk, sed -n (no -i), grep, rg, ag, jq, yq, xmllint, tree, which, type, env, pwd, hostname, date, uname, whoami, id, ps, top, lsof, netstat, ifconfig, dig, host, nslookup, ping, curl/wget without -X/-d/-F/--data/--upload, nc with no listening flags, git status/log/diff/show/branch/config --get/remote -v/blame/grep/ls-files/rev-parse/describe, gh repo view/pr view/pr list/issue view/issue list/api with GET, docker ps/images/inspect/logs/version, kubectl get/describe/logs/version, terraform show/state list/state show, brew list/info/--version, npm ls/view/whoami, pip show/list/freeze, fvm flutter analyze/doctor/--version, dart pub deps/--version). These never modify state."
+    ]
+  },
+  "voiceEnabled": false,
+  "mcpServers": {
+    "tmux": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "tmux-mcp",
+        "--shell-type=zsh"
+      ]
+    }
+  },
+  "tui": "fullscreen"
+}

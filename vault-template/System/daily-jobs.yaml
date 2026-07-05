@@ -1,0 +1,19 @@
+# daily-jobs.yaml — scheduled refreshes run once/day by /start-work (System/scripts/run-daily-jobs.sh).
+# Add a job = append one block (fields: name, cmd, freshness_hours, on_fail, desc; optional dow: N,
+# 1=Mon … 7=Sun, omit = every day). Parsed with stdlib only — keep the flat block shape.
+jobs:
+  # Ships with the harness. No-ops until this machine sets DRIVE_FOLDER in
+  # ~/.claude/harness-telemetry.conf (see the report-telemetry skill), so it's safe to seed enabled.
+  - name: harness-telemetry-report
+    cmd: "bash ~/.claude/skills/report-telemetry/scripts/collect_telemetry.sh --if-configured"
+    freshness_hours: 24
+    on_fail: warn
+    desc: "Upload this machine's harness telemetry (detailed logs + summary row) to the shared Drive folder via rclone. Append-only; the maintainer runs collate-telemetry.sh to fold summaries into the index CSV."
+
+# EXAMPLE — add your own jobs below (same shape):
+#   - name: my-tracker-daily
+#     cmd: "bash ~/Documents/<your-vault>/Notes/<project>/scripts/run_daily.sh"
+#     freshness_hours: 24
+#     dow: 2            # optional: Tuesdays only
+#     on_fail: warn
+#     desc: "pull my metric → cache → publish"

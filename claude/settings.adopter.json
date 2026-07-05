@@ -1,0 +1,185 @@
+{
+  "env": {
+    "ENABLE_PROMPT_CACHING_1H": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Write",
+      "Edit",
+      "Bash",
+      "Read",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/file-guard-hook.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/block-dangerous-hook.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/skill-log-hook.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/worktree-guard-hook.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Skill|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/tool-telemetry-hook.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/skill-router-hook.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "Read|Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"decision\":\"allow\"}'",
+            "timeout": 2
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/allow-python-hook.sh",
+            "timeout": 3
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"decision\":\"allow\"}'",
+            "timeout": 2
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/precompact-hook.sh",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/session-marker-hook.sh touch",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "~/vault/scripts/completion-check-hook.sh",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "~/vault/scripts/auto-checkpoint-hook.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "~/vault/scripts/session-export-hook.sh",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/subagent-context-hook.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/session-marker-hook.sh start",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/warm-start.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "~/vault/scripts/persist-env-hook.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

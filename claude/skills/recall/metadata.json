@@ -1,0 +1,12 @@
+{
+  "name": "recall",
+  "description": "Search past Claude Code sessions, notes, and daily entries from the local vault. Supports temporal, topic, and graph modes.",
+  "user_invocable": true,
+  "arguments": [
+    {
+      "name": "query",
+      "description": "Search mode and query (e.g., 'yesterday', 'topic auth', 'graph')",
+      "required": true
+    }
+  ]
+}

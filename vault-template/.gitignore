@@ -1,0 +1,41 @@
+# OS
+.DS_Store
+
+# Obsidian
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache/
+.obsidian/backups/
+
+# Recordings (too large for git)
+*.m4a
+*.wav
+*.mp3
+*.mp4
+
+# Transcription artifacts
+*_16k.wav
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venvs/
+
+# Binaries
+VaultRecorder
+*.o
+
+# Env files / secrets (keep templates)
+.env
+*.env
+!.env.example
+*-sa.json
+*.pem
+*.key
+
+# External tool cloned into the vault (has its own git repo)
+Claude-Usage-Tracker/
+
+# Node
+node_modules/
