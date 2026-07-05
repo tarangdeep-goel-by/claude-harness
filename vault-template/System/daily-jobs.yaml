@@ -3,9 +3,9 @@
 # 1=Mon … 7=Sun, omit = every day). Parsed with stdlib only — keep the flat block shape.
 jobs:
   # Ships with the harness. No-ops until this machine sets DRIVE_FOLDER in
-  # ~/.claude/harness-telemetry.conf (see the report-telemetry skill), so it's safe to seed enabled.
+  # ~/.claude/harness-telemetry.conf (see the `infra-health` skill), so it's safe to seed enabled.
   - name: harness-telemetry-report
-    cmd: "bash ~/.claude/skills/report-telemetry/scripts/collect_telemetry.sh --if-configured"
+    cmd: "bash ~/.claude/skills/infra-health/scripts/collect_telemetry.sh --if-configured"
     freshness_hours: 24
     on_fail: warn
     desc: "Upload this machine's harness telemetry (detailed logs + summary row) to the shared Drive folder via rclone. Append-only; the maintainer runs collate-telemetry.sh to fold summaries into the index CSV."

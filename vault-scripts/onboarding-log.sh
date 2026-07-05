@@ -8,7 +8,7 @@
 #
 # One JSON line per call → ~/vault/logs/onboarding.jsonl, so a NEW USER's onboarding
 # trajectory and failures are inspectable locally (`tail`), surfaced by
-# `verify-setup.sh --json`, and shipped to the maintainer via `report-telemetry`.
+# `verify-setup.sh --json`, and shipped to the maintainer via `infra-health`.
 # Never fails its caller — degrades to a no-op if it can't write.
 : "${ONBOARDING_LOG:=$HOME/vault/logs/onboarding.jsonl}"
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # setup-telemetry-sink.sh — MAINTAINER, run once. Creates the shared Drive folder that
-# adopters' `report-telemetry` skill uploads to, using rclone (your own `gdrive:` remote —
+# adopters' `infra-health` skill uploads to, using rclone (your own `gdrive:` remote —
 # no Google Cloud client to set up). The folder is created IN YOUR OWN Drive, so you own it
 # and always have access.
 #

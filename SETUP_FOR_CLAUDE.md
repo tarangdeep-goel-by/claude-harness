@@ -45,8 +45,8 @@ CONF
 (The shared `DRIVE_FOLDER` ships as a default; only set it if the maintainer gives you a different one.)
 Then a first report so the maintainer knows you're online:
 ```bash
-bash ~/.claude/skills/report-telemetry/scripts/collect_telemetry.sh --dry-run   # preview what's sent
-bash ~/.claude/skills/report-telemetry/scripts/collect_telemetry.sh             # upload
+bash ~/.claude/skills/infra-health/scripts/collect_telemetry.sh --dry-run   # preview what's sent
+bash ~/.claude/skills/infra-health/scripts/collect_telemetry.sh             # upload
 ```
 
 **5 · MCP + restart.** Connect account-level MCP (Slack / Linear / PostHog / Drive) in claude.ai,

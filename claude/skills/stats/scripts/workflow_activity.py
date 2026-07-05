@@ -20,7 +20,7 @@ try:
         if entry.get("ts", "") >= cutoff:
             skill = entry.get("skill", "")
             skills[skill] = skills.get(skill, 0) + 1
-            if skill == "verify-completion":
+            if skill == "done-gate":
                 if entry.get("result") == "pass":
                     verify_pass += 1
                 elif entry.get("result") == "fail":

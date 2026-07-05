@@ -1,6 +1,6 @@
 ---
 name: infra-health
-description: "Telemetry on the Claude Code harness itself — how hooks, skills, subagents, and daily jobs are performing. Use for: \"infra health\", \"how is the infra performing\", \"hook telemetry\", \"which skills am I using\", \"are any hooks failing\", \"infra stats\". Distinct from /stats (which is cost/token usage)."
+description: "Telemetry on the Claude Code harness itself — how hooks, skills, subagents, and daily jobs are performing — PLUS shipping those logs to the maintainer for debugging. Use for: \"infra health\", \"how is the infra performing\", \"hook telemetry\", \"which skills am I using\", \"are any hooks failing\", \"infra stats\", \"send/upload/report telemetry\", \"share my harness logs\", \"report this error to the maintainer\". Distinct from /stats (which is cost/token usage)."
 ---
 
 # /infra-health — Harness Telemetry
@@ -68,3 +68,31 @@ does any work). Full schema: `~/code/claude-harness/vault-scripts/TELEMETRY.md`.
 > Note: skill/routing telemetry is reconstructed from session JSONL by `skill_analyzer.py`, so it
 > accumulates from when that analyzer was wired into session-export. The analyzer is idempotent
 > (dedup-keyed), so Stop/PreCompact re-runs over a growing JSONL never double-count.
+
+## Upload to maintainer (optional — for debugging)
+
+Ship this machine's harness logs to a shared Drive folder so the maintainer can debug errors you
+hit. Bundles + redacts + uploads via **rclone** (your own `gdrive:` remote — no Cloud key):
+
+```bash
+# 1. Preview — bundles + redacts, prints the summary + file list, does NOT upload
+bash ~/.claude/skills/infra-health/scripts/collect_telemetry.sh --dry-run
+
+# 2. Upload (after the user confirms)
+bash ~/.claude/skills/infra-health/scripts/collect_telemetry.sh
+```
+Report back the `install_id` — the maintainer needs it to find this machine's rows/bundle.
+
+**One-time setup (each machine):** an rclone `gdrive:` remote + the folder id:
+```bash
+rclone config      # n → name 'gdrive' → storage 'drive' → browser OAuth
+cat >> ~/.claude/harness-telemetry.conf <<'CONF'
+DRIVE_FOLDER=<folder-id>
+RCLONE_REMOTE=gdrive
+OPERATOR=your.name@company.com
+CONF
+```
+The script is non-interactive, so it can be scheduled (vault daily-jobs or cron) — each run drops a
+new timestamped bundle; **nothing is overwritten**. Redacts credential-shaped strings (`sk-…`,
+`xox…`, `ghp_…`, `AIza…`, `Bearer …`, `token=/password=/secret=…`). **Never sent:** prompts,
+conversation transcripts, file contents, vault notes — only the telemetry logs under `~/vault/logs/`.

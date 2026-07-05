@@ -13,7 +13,7 @@ echo "== fresh adopter install =="
 bash "$REPO/install.sh" >/dev/null 2>&1
 [ -e "$SB/.claude/settings.json" ] && ! grep -q "/Users/" "$SB/.claude/settings.json"; chk "adopter settings, no personal paths" $?
 { [ ! -e "$SB/.claude/skills/analysis" ] && [ ! -e "$SB/.claude/skills/capture-journey-generic" ]; }; chk "SM-coupled skills skipped" $?
-{ [ -L "$SB/.claude/skills/recall" ] && [ -L "$SB/.claude/skills/report-telemetry" ]; }; chk "generic skills linked" $?
+{ [ -L "$SB/.claude/skills/recall" ] && [ -L "$SB/.claude/skills/infra-health" ]; }; chk "generic skills linked" $?
 [ -f "$SB/Documents/vault-work/CLAUDE.md" ]; chk "vault seeded" $?
 grep -q harness-telemetry-report "$SB/Documents/vault-work/System/daily-jobs.yaml"; chk "telemetry daily-job seeded" $?
 

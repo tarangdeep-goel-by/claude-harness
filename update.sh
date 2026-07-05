@@ -103,10 +103,10 @@ if [ -d "$VAULT_DST" ]; then
 fi
 
 # 5. Onboarding/update report → telemetry sink (opt-in; no-op if unconfigured).
-if [ -x "$REPO/verify-setup.sh" ] && [ -x "$HOME/.claude/skills/report-telemetry/scripts/collect_telemetry.sh" ]; then
+if [ -x "$REPO/verify-setup.sh" ] && [ -x "$HOME/.claude/skills/infra-health/scripts/collect_telemetry.sh" ]; then
   rpt="$(mktemp "${TMPDIR:-/tmp}/onboard.XXXXXX.json")"
   HARNESS_OWNER="$OWNER" "$REPO/verify-setup.sh" --json --vault "$VAULT_DST" > "$rpt" 2>/dev/null || true
-  bash "$HOME/.claude/skills/report-telemetry/scripts/collect_telemetry.sh" --onboarding "$rpt" --if-configured 2>/dev/null \
+  bash "$HOME/.claude/skills/infra-health/scripts/collect_telemetry.sh" --onboarding "$rpt" --if-configured 2>/dev/null \
     && echo "  onboarding report sent to telemetry sink (if configured)" || true
   rm -f "$rpt"
 fi
