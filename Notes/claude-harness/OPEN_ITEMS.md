@@ -12,9 +12,10 @@ Cross-cutting/ops todos live in the global `System/dashboards/Open Items.md` (no
       other memory-hook entries) live only in the global `~/.claude/settings.json`, which is NOT in this
       repo. Decide: mirror into a tracked template (e.g. `settings.json.example`) so a clone reproduces
       the hook wiring. [src: handoff 5927821f]
-- [ ] **Precompact-hook state preservation.** vault-push was upgraded to capture session-end state, but
-      `precompact-hook.sh` was not — a mid-session compaction can drop detail. Add a state snapshot on
-      PreCompact mirroring the vault-push handoff (lighter). [src: user, 2026-07-06]
+- [x] **Precompact-hook state preservation.** vault-push captures session-end state; the PreCompact
+      hook now ALSO writes a deterministic state snapshot (git working tree + active goal) alongside
+      the transcript export, so a mid-session compaction doesn't lose the resume point. No GLM (hot-path
+      free); rich synthesis stays vault-push's job. (2026-07-06)
 - [ ] **Recall negative-case audit.** "Facts we missed" is unmeasured. Monthly: sample sessions → GLM
       "what durable facts?" → diff vs captured. Defer until utilization + approval signals prove useful.
       [src: plan `atomic-popping-barto.md`]
