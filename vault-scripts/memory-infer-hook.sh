@@ -336,7 +336,7 @@ TMP=$(mktemp -t meminfer)
 trap 'rm -f "$TMP"' EXIT
 if ! call_glm "$TMP" "$SYS_PROMPT" "$USER_PROMPT"; then
   infer_log "error:curl" "$(head -c 200 "$TMP" 2>/dev/null | tr '\n' ' ')"
-  hook_log "error" "curl-failed"
+  hook_log "error" "glm=err curl-failed"
   rm -f "$TMP"
   trap - EXIT
   exit 0
@@ -346,11 +346,17 @@ PROJECT_NAME="$(basename "${SESSION_CWD:-unknown}")"
 TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 APPEND_COUNT=$(parse_and_append "$TMP" "$QUEUE_FILE" "$SESSION_ID" "$PROJECT_NAME" "$TS" 2>/tmp/meminfer-err)
 APPEND_COUNT="${APPEND_COUNT:-0}"
-if [ "$APPEND_COUNT" = "0" ]; then
-  # Surface parse/api error detail into the infer log for debugging.
-  infer_log "ok:no-candidates" "$(head -c 200 /tmp/meminfer-err 2>/dev/null | tr '\n' ' ')"
+# Classify GLM outcome so hook-health can separate real errors from genuine empties:
+#   err = api/parse error surfaced on stderr; empty = model returned no durable facts; ok = N appended.
+ERR_DETAIL="$(head -c 200 /tmp/meminfer-err 2>/dev/null | tr '\n' ' ')"
+if [ -n "$ERR_DETAIL" ]; then
+  infer_log "error:glm" "$ERR_DETAIL"
+  hook_log "error" "glm=err appended=0"
+elif [ "$APPEND_COUNT" = "0" ]; then
+  hook_log "ok" "glm=empty appended=0"
+else
+  hook_log "ok" "glm=ok appended=$APPEND_COUNT"
 fi
-hook_log "ok" "appended=$APPEND_COUNT"
 rm -f "$TMP"
 trap - EXIT
 exit 0

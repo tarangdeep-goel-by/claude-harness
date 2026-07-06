@@ -42,7 +42,7 @@ MS_MEMORY_DIR="$MEMORY_DIR" \
 MS_QUEUE="$QUEUE" \
 MS_STATE="$STATE" \
 MS_PROJECT="$PROJECT" \
-python3 - <<'PY' 2>>"$ERR_LOG" || true
+python3 - <<'PY' 2>>"$ERR_LOG"
 import os, sys, re, json, time, glob
 
 MD    = os.environ["MS_MEMORY_DIR"]
@@ -270,13 +270,16 @@ try:
 except Exception:
     pass
 PY
+PY_RC=$?
 
 END_MS=$(python3 -c 'import time;print(int(time.time()*1000))' 2>/dev/null || date +%s)
 DUR_MS=$((END_MS - START_MS))
 [ "$DUR_MS" -lt 0 ] && DUR_MS=0
 DUR_S=$(python3 -c "print(round($DUR_MS/1000.0, 3))" 2>/dev/null || echo "0")
 
-printf '{"ts":"%s","hook":"memory-staleness","outcome":"ok","duration_s":%s}\n' \
-    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$DUR_S" >> "$HOOKS_LOG" 2>/dev/null || true
+OUTCOME="ok"
+[ "$PY_RC" -ne 0 ] && OUTCOME="error"
+printf '{"ts":"%s","hook":"memory-staleness","outcome":"%s","duration_s":%s}\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$OUTCOME" "$DUR_S" >> "$HOOKS_LOG" 2>/dev/null || true
 
 exit 0
