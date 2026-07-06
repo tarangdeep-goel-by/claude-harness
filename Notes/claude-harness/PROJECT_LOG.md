@@ -3,7 +3,7 @@
 > Temporal spine for the claude-harness workspace (the Claude Code harness config: hooks, skills,
 > memory infra). Newest-first. Slice on `## YYYY-MM-DD`. Throughline in `PROJECT_ARC.md`.
 
-## 2026-07-06 · 5927821f · dev · Memory quality loop closed (Write/Read/Test/Track/Improve)
+## 2026-07-06 · 5927821f · dev · Memory quality loop + precompact state preservation
 
 - **Q1–Q5 shipped + merged to main (`03e9561`).** Closed the 5-step quality loop:
   - Q1 utilization hook (`memory-consulted-hook.sh`, PostToolUse Read) → `~/vault/logs/memory-consulted.json`.
@@ -16,7 +16,10 @@
   `/memory review` advisory-only; real-candidate test (not disposable).
 - **Honest finding:** corpus is 193 files / 2% canonical adoption — the staleness/overlap machinery
   has almost nothing to chew on. Surfaced automatically by `/memory review` tweak [1].
-- Links: [[5927821f]] (handoff); commits `e1f9956` `c928f36` `fc195f1` `03e9561`.
+- **PreCompact state preservation (push 2, `8fe8f72`):** `precompact-hook.sh` now writes a
+  deterministic state snapshot (git + active goal, CC-noise filtered) alongside the transcript export.
+  Decision: no GLM on the hot path — [[0002-precompact-deterministic-snapshot]].
+- Links: [[5927821f]] (handoff); commits `e1f9956` `c928f36` `fc195f1` `03e9561` `e3e63ae` `8fe8f72`.
 
 ## 2026-07-05 · prior · Memory infra #1 (dialectic infer loop) + #2 (temporal invalidation) built
 

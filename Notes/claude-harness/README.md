@@ -21,6 +21,9 @@ Memory hook set: `memory-infer` (Stop, GLM-4.7 dialectic), `memory-validate` + `
 - **Memory quality loop: CLOSED.** The 5-step loop (Write → Read → Test → Track → Improve) is built,
   merged to main (`03e9561`), and exercised end-to-end. `/memory health` rolls up capture/approval/
   utilization/corpus/hook-health; `/memory review` proposes advisory tweaks.
+- **PreCompact state preservation: live (`8fe8f72`).** `precompact-hook.sh` writes a deterministic
+  state snapshot (git + active goal) alongside the transcript export, so mid-session compaction
+  doesn't lose the resume point. No GLM (hot path stays free).
 - **Built in two phases:** #1 dialectic infer loop + #2 temporal invalidation (2026-07-05), then the
   quality measurement layer Q1–Q5 (2026-07-06). See `PROJECT_ARC.md`.
 - **Top finding (honest):** corpus is 193 files at **2% canonical-schema adoption** — staleness/overlap

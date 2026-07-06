@@ -32,7 +32,8 @@ subsystem maturing from "writes things" to "knows whether the things it writes a
 
 - **Adoption gap.** 193 corpus files, 2% canonical. The quality machinery works but has thin signal
   until the S3 safe-archive + backfill runs. `/memory review` surfaces this as tweak [1] automatically.
-- **Pre-compaction state preservation.** vault-push captures session-end state, but a mid-session
-  compaction can lose detail; the precompact hook should snapshot state too (next).
+- **Pre-compaction state preservation — DONE (`8fe8f72`).** `precompact-hook.sh` now writes a
+  deterministic state snapshot (git + active goal) alongside the transcript export. Decision: no GLM
+  on the hot path — [[0002-precompact-deterministic-snapshot]].
 - **Recall (negative case).** "Facts we missed" is still unmeasured — needs a monthly sample-audit.
   Defer until utilization + approval prove useful.
