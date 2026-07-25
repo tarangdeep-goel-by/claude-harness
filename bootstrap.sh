@@ -36,25 +36,6 @@ fi
 # gh — used by /dev-task (PR → CI → merge).
 command -v gh >/dev/null 2>&1 && echo "✓ gh: $(gh --version | head -1)" || echo "⚠ gh (GitHub CLI) missing — /dev-task needs it"
 
-# gog — Google Workspace CLI (Gmail/Drive/Sheets/Slides). Used for source mining + tracker publish.
-if command -v gog >/dev/null 2>&1; then
-  echo "✓ gog: $(gog --version 2>/dev/null | head -1)"
-  echo "  auth: 'gog auth setup' (own OAuth client) then 'gog auth add' — user OAuth."
-elif [ -n "$CHECK" ]; then
-  echo "▶ gog MISSING (would: brew install gog)"
-else
-  echo "▶ installing gog…"; brew install gog 2>/dev/null || echo "⚠ install gog manually (see vault reference-gogcli) — Gmail/Drive mining needs it"
-fi
-
-# rclone — gdrive: remote (Drive read/write).
-if command -v rclone >/dev/null 2>&1; then
-  echo "✓ rclone: $(rclone version 2>/dev/null | head -1) — ensure a 'gdrive:' remote ('rclone config')"
-elif [ -n "$CHECK" ]; then
-  echo "▶ rclone MISSING (would: brew install rclone)"
-else
-  echo "▶ installing rclone…"; brew install rclone 2>/dev/null || echo "⚠ install rclone manually — Drive fetch needs it"
-fi
-
 # Python libs used by harness scripts (best-effort).
 python3 -c "import requests" 2>/dev/null && echo "✓ python: requests" || echo "▶ pip install requests"
 

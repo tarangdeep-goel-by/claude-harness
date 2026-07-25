@@ -68,7 +68,7 @@ error rate >10% → inspect the hook log; staling memories → re-verify via `/r
 | `~/vault/memory-review-queue.jsonl` | candidate + invalidation entries with `status` (pending/applied/dismissed) |
 | `~/vault/logs/hooks.jsonl` | memory-infer / memory-validate / memory-staleness / memory-consulted hook events |
 | `~/vault/logs/memory-consulted.json` | `{relpath: {count, last_seen}}` — read tracking (may not exist yet) |
-| `~/.claude/projects/-Users-tarang-Documents-Projects/memory/*.md` | the corpus itself (skips `MEMORY.md`, `SCHEMA.md`, `_shared.md`, dotfiles, `legacy/`) |
+| `~/.claude/projects/<project-slug>/memory/*.md` | the corpus itself (skips `MEMORY.md`, `SCHEMA.md`, `_shared.md`, dotfiles, `legacy/`) |
 | `~/vault/logs/memory-staleness-state.json` | slug→date debounce map for the staleness checker |
 
 `--json` emits one object `{capture, approval, invalidations, utilization, corpus,

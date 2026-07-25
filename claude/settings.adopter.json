@@ -17,6 +17,16 @@
   "hooks": {
     "PreToolUse": [
       {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/workflow-gate-hook.sh",
+            "timeout": 4
+          }
+        ]
+      },
+      {
         "matcher": "Read|Write|Edit",
         "hooks": [
           {
@@ -37,16 +47,6 @@
         ]
       },
       {
-        "matcher": "Skill",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/vault/scripts/skill-log-hook.sh",
-            "timeout": 5
-          }
-        ]
-      },
-      {
         "matcher": "Write|Edit",
         "hooks": [
           {
@@ -59,6 +59,26 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/auto-test-hook.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/vault/scripts/memory-validate-hook.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
         "matcher": "Skill|Task",
         "hooks": [
           {
@@ -67,15 +87,14 @@
             "timeout": 5
           }
         ]
-      }
-    ],
-    "UserPromptSubmit": [
+      },
       {
+        "matcher": "Read",
         "hooks": [
           {
             "type": "command",
-            "command": "~/vault/scripts/skill-router-hook.sh",
-            "timeout": 5
+            "command": "~/vault/scripts/memory-consulted-hook.sh",
+            "timeout": 3
           }
         ]
       }
@@ -98,16 +117,6 @@
             "type": "command",
             "command": "~/vault/scripts/allow-python-hook.sh",
             "timeout": 3
-          }
-        ]
-      },
-      {
-        "matcher": "Agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '{\"decision\":\"allow\"}'",
-            "timeout": 2
           }
         ]
       }
@@ -145,6 +154,11 @@
             "type": "command",
             "command": "~/vault/scripts/session-export-hook.sh",
             "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "~/vault/scripts/memory-infer-hook.sh",
+            "timeout": 60
           }
         ]
       }
@@ -176,6 +190,11 @@
           {
             "type": "command",
             "command": "~/vault/scripts/persist-env-hook.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "~/vault/scripts/memory-staleness-check.sh",
             "timeout": 5
           }
         ]

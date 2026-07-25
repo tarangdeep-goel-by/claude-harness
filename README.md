@@ -20,7 +20,7 @@ git clone <this-repo> ~/code/claude-harness
 cd ~/code/claude-harness
 ./install.sh                 # symlinks the engine into ~/.claude + ~/vault/scripts,
                              #   AND seeds a vault from vault-template/ (only if none exists)
-./bootstrap.sh               # deps: jq, gog, rclone; checks qmd / gh / python
+./bootstrap.sh               # deps: jq, python3; checks qmd / gh
 bash ~/Documents/vault-work/System/scripts/setup-work-machine.sh   # qmd index, transcription models, launchd
 # copy secrets into ~/.claude + ~/code/.env  (see SECRETS.md)
 # connect account-level MCP (Slack/Linear/PostHog) in claude.ai, then restart Claude Code
@@ -31,7 +31,7 @@ bash ~/Documents/vault-work/System/scripts/setup-work-machine.sh   # qmd index, 
 Steps are ordered: `install` wires the engine + seeds the vault; `bootstrap` installs deps;
 `setup-work-machine.sh` builds the qmd index + transcription models + the daily-sync launchd agent;
 then secrets + MCP; `verify-setup.sh` last (so its qmd-index check passes). Full external-tool
-detail (gog/rclone auth, MCP, VPN) lives in the seeded
+detail (MCP, VPN) lives in the seeded
 `vault-template/System/docs/WORK_MACHINE_SETUP.md`.
 
 > **qmd is required for `/recall` and warm-start context.** Install it (source: `github.com/tobi/qmd`):
@@ -105,9 +105,8 @@ SECRETS.md                    what to copy in by hand (never committed)
 - **Domain skills stay out of the template** — add your own data-stack and product-area skills under
   your vault's `.claude/skills/` (e.g. a Mixpanel skill encoding your event names, a Metabase skill
   encoding your DB schema).
-- **Owner-only skills** (`analysis`, `capture-journey-generic`): shipped but **SM-coupled** — they hard-code the
-  sm-analytics / Mixpanel data layer, so `install.sh` skips them for adopters (owner mode links them).
-  They'll be generalized when that stack is public; until then, adapt them into your own vault skills.
+- All shipped skills are dev-focused and data-stack-agnostic — bring your own product/analytics
+  skills under your vault's `.claude/skills/` as needed.
 
 ### Telemetry (how the infra reports on itself)
 Every hook logs to `~/vault/logs/hooks.jsonl`; every **skill + subagent** invocation is captured by

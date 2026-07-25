@@ -84,9 +84,7 @@ hdr "data layer:"
 if [ "$JSON" = 1 ]; then
   INSTALL_ID="$(tr -d '[:space:]' < "$HOME/.claude/harness-install-id" 2>/dev/null || echo unknown)"
   VER="$(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo unknown)"
-  CONF="$HOME/.claude/harness-telemetry.conf"
-  OPERATOR="${HARNESS_TELEMETRY_OPERATOR:-$( [ -f "$CONF" ] && grep -m1 '^OPERATOR=' "$CONF" | cut -d= -f2- | tr -d ' "')}"
-  [ -z "$OPERATOR" ] && OPERATOR="$(git config --global user.email 2>/dev/null || true)"
+  OPERATOR="$(git config --global user.email 2>/dev/null || true)"
   [ -z "$OPERATOR" ] && OPERATOR="${USER:-unknown}"
   python3 - "$RESULTS_FILE" "$INSTALL_ID" "$VER" "$(uname -s 2>/dev/null || echo unknown)" "$OWNER" "$OPERATOR" "$HOME/vault/logs/onboarding.jsonl" <<'PY'
 import sys, json, os as _os

@@ -1,0 +1,72 @@
+{
+  "skill_name": "debug-escalation",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "The tests are failing after my last commit. Here's the error:\n\nTypeError: Cannot read properties of undefined (reading 'map')\n    at Dashboard.tsx:42\n    at renderWithHooks (react-dom.development.js:14985)",
+      "expected_output": "Claude should follow Phase 1: read the full error, identify the failing line (Dashboard.tsx:42), trace backward to find why the value is undefined, and check git diff for recent changes. Should NOT propose a fix before understanding.",
+      "assertions": [
+        "Claude reads the complete error message including the stack trace",
+        "Claude identifies the specific failing line (Dashboard.tsx:42) and the property access (.map on undefined)",
+        "Claude traces backward to understand WHY the value is undefined before proposing a fix",
+        "Claude checks git diff or recent changes to find what might have caused it",
+        "Claude does NOT propose a fix in the first response before understanding the problem"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I keep getting a 422 Unprocessable Entity from the /api/tasks endpoint. Not sure why.",
+      "expected_output": "Claude should ask for specific input/output before guessing, per Phase 1 rule: 'If the user reports an error, ask for specific input/output before guessing.'",
+      "assertions": [
+        "Claude asks for the specific request payload or input that causes the 422",
+        "Claude asks for the full error response body, not just the status code",
+        "Claude does NOT immediately guess at a fix without seeing the actual request/response",
+        "Claude follows the 'understand before fixing' principle"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I tried your fix but it didn't work. Still getting the same error. I also tried adding a null check and wrapping it in a try/catch but neither helped.",
+      "expected_output": "This represents attempt 3. Claude should STOP fixing and escalate: summarize what was tried, state why the mental model is likely wrong, and ask how to proceed.",
+      "assertions": [
+        "Claude recognizes this is the 3rd failed attempt (user's two attempts + context implies prior fix)",
+        "Claude STOPS proposing new fixes",
+        "Claude summarizes what has been tried so far",
+        "Claude states that the mental model may be wrong or this may be an architectural issue",
+        "Claude asks the user how to proceed rather than attempting another fix"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Stop guessing. That's the third thing you've tried and none of them worked.",
+      "expected_output": "Claude should immediately recognize the escalation signal, stop fixing, summarize findings, and ask for direction.",
+      "assertions": [
+        "Claude immediately stops proposing fixes",
+        "Claude acknowledges the user's frustration without being defensive",
+        "Claude summarizes what was tried and what was learned",
+        "Claude explicitly asks for the user's direction on how to proceed"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Can you add a new /api/archive endpoint that soft-deletes tasks by setting is_archived=true?",
+      "expected_output": "This is a feature request, not a bug. The debug-escalation skill should NOT trigger.",
+      "assertions": [
+        "Claude does NOT invoke debug-escalation behavior",
+        "Claude treats this as a feature implementation request",
+        "Claude does NOT ask for error messages or stack traces"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "The Docker build is failing with:\n\nERROR [backend 4/7] RUN pip install -r requirements.txt\n#12 45.23 ERROR: Could not find a version that satisfies the requirement torch==2.1.0\n#12 45.23 ERROR: No matching distribution found for torch==2.1.0",
+      "expected_output": "Claude should form a single hypothesis about the torch version issue, propose the smallest fix (e.g., update version constraint), and verify.",
+      "assertions": [
+        "Claude reads the full error message including the version constraint",
+        "Claude forms ONE clear hypothesis about why torch==2.1.0 is unavailable",
+        "Claude proposes the SMALLEST possible change (not a rewrite of requirements.txt)",
+        "Claude verifies the fix works after applying it (runs docker build again)"
+      ]
+    }
+  ]
+}

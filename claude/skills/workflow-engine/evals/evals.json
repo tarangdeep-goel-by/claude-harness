@@ -1,0 +1,75 @@
+{
+  "skill_name": "workflow-engine",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add rate limiting to the /api/search endpoint using a sliding window algorithm.",
+      "expected_output": "Workflow engine should invoke task-triage (new implementation work) and karpathy-guidelines (writing code). Should classify as Medium (design decisions needed, touches 3+ files).",
+      "assertions": [
+        "Claude invokes task-triage before starting implementation",
+        "Claude invokes karpathy-guidelines since code will be written",
+        "Claude classifies the task as Medium (not Quick or Small)",
+        "Claude logs the workflow-engine invocation to workflow.jsonl",
+        "Claude does NOT start writing code before triage is complete"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The login endpoint returns a 500 error. Here's the stack trace:\n\nKeyError: 'user_id' at auth/service.py:88",
+      "expected_output": "Workflow engine should invoke task-triage AND debug-escalation (bug encountered). Should NOT invoke done-gate yet.",
+      "assertions": [
+        "Claude invokes task-triage to classify the bug fix",
+        "Claude invokes debug-escalation for the error/bug",
+        "Claude does NOT invoke done-gate (not claiming done yet)",
+        "Claude follows debug-escalation Phase 1 (understand before fixing)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Fix the typo in the README — it says 'Pyhton' instead of 'Python'.",
+      "expected_output": "Workflow engine should invoke task-triage, which classifies as Quick. No plan mode, no worktree, just fix it.",
+      "assertions": [
+        "Claude invokes task-triage",
+        "Claude classifies as Quick tier",
+        "Claude does NOT enter plan mode",
+        "Claude does NOT create a worktree",
+        "Claude fixes the typo directly and verifies"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "How does the authentication middleware work in this project?",
+      "expected_output": "This is a question, not a development task. Workflow engine should recognize this and NOT invoke any sub-skills.",
+      "assertions": [
+        "Claude does NOT invoke task-triage (not a dev task)",
+        "Claude does NOT invoke debug-escalation (not a bug)",
+        "Claude answers the question directly by reading code",
+        "Claude still logs the workflow-engine check"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "All tests pass, the feature works, and I've verified the Docker build. Let me commit this.",
+      "expected_output": "Workflow engine should invoke done-gate before the user's 'all tests pass' claim is accepted. Even though the user says they've verified, Claude should verify independently.",
+      "assertions": [
+        "Claude invokes done-gate before accepting the 'tests pass' claim",
+        "Claude runs tests independently rather than trusting the user's claim",
+        "Claude checks for code smells in changed files",
+        "Claude only confirms completion after its own fresh verification"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Build a complete user management system with CRUD operations, role-based access control, audit logging, and an admin dashboard.",
+      "expected_output": "Workflow engine should invoke task-triage, classify as Large (5+ sub-tickets, cross-cutting). Should enter plan mode and orchestrate with subagents.",
+      "assertions": [
+        "Claude invokes task-triage",
+        "Claude classifies as Large tier",
+        "Claude enters plan mode or proposes a plan before starting",
+        "Claude breaks the work into sub-tickets",
+        "Claude plans to use subagents for parallel execution",
+        "Claude creates a worktree before writing any code"
+      ]
+    }
+  ]
+}

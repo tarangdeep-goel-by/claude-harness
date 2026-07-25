@@ -28,9 +28,9 @@ import os
 import sys
 from datetime import datetime, timezone
 
-DEFAULT_MEMORY_DIR = os.path.expanduser(
-    "~/.claude/projects/-Users-tarang-Documents-Projects/memory"
-)
+_CPD = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+_proj_slug = "-" + _CPD.lstrip("/").replace("/", "-")
+DEFAULT_MEMORY_DIR = os.path.join(os.path.expanduser("~/.claude/projects"), _proj_slug, "memory")
 
 # confidence rank for sorting (lower sorts first = displayed first)
 CONF_RANK = {"high": 0, "medium": 1, "low": 2}

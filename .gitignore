@@ -14,3 +14,7 @@
 *auth*.json
 *.pem
 *.key
+
+# Local planning notes + plugin-specific memory — not for the public repo.
+plans/
+.claude/

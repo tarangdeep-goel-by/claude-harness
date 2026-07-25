@@ -46,9 +46,6 @@ nlm source add my-project --text "$(cat Notes/my-project/spec.md)" --title "Prod
 # Add a URL
 nlm source add my-project --url "https://example.com/your-page"
 
-# Add from Google Drive (if uploaded via upload_to_gdrive.sh)
-nlm source add my-project --drive "https://drive.google.com/file/d/..."
-
 # Wait for processing before querying
 nlm source add my-project --text "..." --title "..." --wait
 ```

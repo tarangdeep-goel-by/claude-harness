@@ -63,12 +63,6 @@ c=$(printf '%s\n' "$o" | sed -n 's/^COST:://p'); add_cost "$c"
 grep -q '"hook":"warm-start"' "$SB/vault/logs/hooks.jsonl" 2>/dev/null; chk "warm-start hook fired (context injected)" $?
 printf '%s\n' "$o" | sed -n 's/^RESULT:://p' | grep -qi 'main'; chk "agent read the injected git context (said 'main')" $?
 
-# ── Case 2: the agent can find + run harness tooling (`infra-health` collector, dry-run) ────
-echo "== case 2: agent runs harness tooling =="
-o=$(run_agent "Run this exact command and report the last line of its output verbatim: bash ~/.claude/skills/infra-health/scripts/collect_telemetry.sh --dry-run")
-c=$(printf '%s\n' "$o" | sed -n 's/^COST:://p'); add_cost "$c"
-printf '%s\n' "$o" | sed -n 's/^RESULT:://p' | grep -qiE 'bundle|dry-run|staged'; chk "agent executed the collector + reported its output" $?
-
 # ── Case 3: the agent can write into the vault structure ─────────────────────────────────────
 echo "== case 3: agent writes a note into the vault =="
 o=$(run_agent "Create the file Notes/eval-check/hello.md containing exactly the single word: WORKS")

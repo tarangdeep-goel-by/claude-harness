@@ -21,9 +21,8 @@ separately. A machine is only "at full level" once these are in place too.
 | Tool / access | Setup | Used for |
 |---|---|---|
 | **Your data lib / venv** | Clone your analytics library under `~/code/` and install its venv | The backbone of all analysis work |
-| **Google Drive** (optional) | `rclone config` → a `gdrive:` remote (user OAuth) | Drive read/write if your workflow needs it |
 | **MCP connectors** | claude.ai **account-level** (come with the login) but must be **connected** in this client: **Slack, Linear**, or others. Local stdio: `tmux`, `qmd` (in harness `settings.json`). | Slack/Linear/other access from Claude |
-| **Creds** | `~/code/.env`: your analytics API keys, DB credentials. `~/.claude/harness-telemetry.conf`: rclone remote + `OPERATOR` for telemetry. | API auth |
+| **Creds** | `~/code/.env`: your analytics API keys, DB credentials. | API auth |
 | **VPN** | up if required | Private database access |
 
 > ⚠ **MCP tools load at SESSION START.** Connect a connector (Slack/Linear/PostHog) and then **restart

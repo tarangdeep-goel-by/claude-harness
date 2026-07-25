@@ -11,7 +11,6 @@
 # separate "delivered-to-context" signal is a future enhancement.
 set -uo pipefail
 
-MEMORY_DIR="/Users/tarang/.claude/projects/-Users-tarang-Documents-Projects/memory"
 STATE="$HOME/vault/logs/memory-consulted.json"
 HOOKS_LOG="$HOME/vault/logs/hooks.jsonl"
 mkdir -p "$(dirname "$STATE")" "$(dirname "$HOOKS_LOG")" 2>/dev/null || true
@@ -19,6 +18,17 @@ mkdir -p "$(dirname "$STATE")" "$(dirname "$HOOKS_LOG")" 2>/dev/null || true
 START_MS=$(python3 -c 'import time;print(int(time.time()*1000))' 2>/dev/null || date +%s)
 
 INPUT=$(cat 2>/dev/null || echo '{}')
+
+# Memory dir is project-scoped, derived from the session cwd in the hook payload (portable —
+# no hardcoded path; matches Claude Code's per-project memory layout). Empty when cwd is absent,
+# in which case the relpath check below no-ops.
+PROJECTS_BASE="$HOME/.claude/projects"
+SESSION_CWD="$(printf '%s' "$INPUT" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('cwd',''))" 2>/dev/null || true)"
+if [ -n "$SESSION_CWD" ]; then
+  MEMORY_DIR="$PROJECTS_BASE/$(echo "$SESSION_CWD" | tr '/' '-')/memory"
+else
+  MEMORY_DIR=""
+fi
 
 # Extract the read file_path as a path relative to MEMORY_DIR (if under it).
 REL=$(printf '%s' "$INPUT" | python3 -c '

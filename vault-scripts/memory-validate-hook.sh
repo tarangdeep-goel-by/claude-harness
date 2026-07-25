@@ -21,9 +21,17 @@ source "$(dirname "$0")/hooklib.sh" 2>/dev/null \
 LOG="$HOME/vault/logs/memory-validate.log"
 mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
 
-MEMORY_DIR="$HOME/.claude/projects/-Users-tarang-Documents-Projects/memory"
-
 INPUT=$(cat 2>/dev/null || echo '{}')
+
+# Memory dir is project-scoped, derived from the session cwd in the hook payload (portable —
+# no hardcoded path; matches Claude Code's per-project memory layout).
+PROJECTS_BASE="$HOME/.claude/projects"
+SESSION_CWD="$(printf '%s' "$INPUT" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('cwd',''))" 2>/dev/null || true)"
+if [ -n "$SESSION_CWD" ]; then
+  MEMORY_DIR="$PROJECTS_BASE/$(echo "$SESSION_CWD" | tr '/' '-')/memory"
+else
+  MEMORY_DIR=""
+fi
 
 # Extract affected file path from PostToolUse payload (tool_input.file_path).
 FILE_PATH=$(printf '%s' "$INPUT" | python3 -c '

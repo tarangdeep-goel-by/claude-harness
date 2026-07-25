@@ -1,0 +1,69 @@
+{
+  "skill_name": "done-gate",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I just added the new /health endpoint to the FastAPI backend. It returns 200 with {\"status\": \"ok\"}. Done!",
+      "expected_output": "Claude should NOT accept the 'Done!' claim. It must run a verification command (e.g., curl the endpoint, run tests) and show the output before confirming completion.",
+      "assertions": [
+        "Claude does NOT say 'done', 'fixed', or 'complete' without first running a command",
+        "Claude runs at least one verification command (pytest, curl, or similar)",
+        "Claude reads and reports the full output of the verification command",
+        "Claude includes concrete evidence in the completion claim (e.g., '200 OK', 'X tests passed')"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The bug where users got a 500 on login is fixed now. I changed the token validation to handle expired tokens gracefully. Should work!",
+      "expected_output": "Claude should flag 'Should work!' as banned language and insist on running the reproduction case before confirming the fix.",
+      "assertions": [
+        "Claude identifies 'Should work!' as banned language per the skill rules",
+        "Claude insists on running a reproduction test or verification command",
+        "Claude does NOT echo the claim as confirmed without evidence",
+        "Claude says something like 'Let me verify...' before running a command"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I've refactored the database service to use connection pooling. All tests pass. Can you confirm everything looks good?",
+      "expected_output": "Claude should run the test suite fresh (not trust the user's claim) and report results with pass count and exit code.",
+      "assertions": [
+        "Claude runs the test suite itself rather than trusting the user's claim that tests pass",
+        "Claude reports specific test results (pass count, fail count, exit code)",
+        "Claude checks for code smells in changed files using the self-review grep"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "I updated the CSS for the dashboard header. The font is now Inter and the color matches the design spec. There's no test suite for this.",
+      "expected_output": "Claude should acknowledge it cannot verify automatically and tell the user what manual check is needed.",
+      "assertions": [
+        "Claude acknowledges that automated verification is not possible",
+        "Claude explicitly states the reason (no test suite for CSS/visual changes)",
+        "Claude suggests specific manual verification steps",
+        "Claude does NOT claim the work is 'done' or 'verified'"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Can you explain how the auth middleware works in this codebase?",
+      "expected_output": "This is a question, not a completion claim. The skill should NOT trigger. Claude should just explain the code.",
+      "assertions": [
+        "Claude does NOT invoke done-gate behavior",
+        "Claude does NOT run verification commands",
+        "Claude answers the question about auth middleware directly"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "I think the migration is probably fixed. It was throwing a column mismatch error but I updated the schema. Likely resolved now.",
+      "expected_output": "Claude should flag multiple banned phrases ('probably fixed', 'likely resolved') and demand fresh verification.",
+      "assertions": [
+        "Claude identifies at least one banned phrase ('probably fixed' or 'likely resolved')",
+        "Claude does NOT accept the tentative language as sufficient",
+        "Claude proposes running the migration or related test to verify",
+        "Claude frames the response as 'Let me verify' rather than accepting the claim"
+      ]
+    }
+  ]
+}

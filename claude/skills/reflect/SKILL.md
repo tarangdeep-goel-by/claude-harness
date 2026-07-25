@@ -139,7 +139,7 @@ confirmation for the specific N.**
    ```bash
    python3 ~/.claude/skills/reflect/scripts/apply_memory.py ~/vault/memory-review-queue.jsonl <N> apply
    ```
-   - Writes `/Users/tarang/.claude/projects/-Users-tarang-Documents-Projects/memory/<name>.md` with canonical frontmatter:
+   - Writes `~/.claude/projects/<project-slug>/memory/<name>.md` (project-scoped, derived from your session cwd) with canonical frontmatter:
      ```
      ---
      name: <slug>

@@ -46,8 +46,11 @@ run "$REPO/vault-scripts/file-guard-hook.sh" '{"tool_name":"Write","tool_input":
 run "$REPO/vault-scripts/file-guard-hook.sh" '{"tool_name":"Write","tool_input":{"file_path":"/tmp/p/README.md"}}'; ! printf '%s' "$OUT" | grep -q '"deny"'; chk "file-guard ALLOWS writing README.md" $?
 
 WG="$REPO/vault-scripts/worktree-guard-hook.sh"
-run "$WG" "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$SB/code/sm-analytics/x.py\"}}"; printf '%s' "$OUT" | grep -q '"deny"'; chk "worktree-guard DENIES edit in a primary checkout" $?
-run "$WG" "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$SB/code/.worktrees/sm-analytics__t/x.py\"}}"; ! printf '%s' "$OUT" | grep -q '"deny"'; chk "worktree-guard ALLOWS edit in a worktree" $?
+# The guard is opt-in (WORKTREE_GUARD_REPOS) — enable it for the fixture repo so the deny path fires.
+export WORKTREE_GUARD_CODE="$SB/code" WORKTREE_GUARD_REPOS="my-app"
+run "$WG" "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$SB/code/my-app/x.py\"}}"; printf '%s' "$OUT" | grep -q '"deny"'; chk "worktree-guard DENIES edit in a primary checkout" $?
+run "$WG" "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$SB/code/.worktrees/my-app__t/x.py\"}}"; ! printf '%s' "$OUT" | grep -q '"deny"'; chk "worktree-guard ALLOWS edit in a worktree" $?
+unset WORKTREE_GUARD_CODE WORKTREE_GUARD_REPOS
 
 rm -rf "$SB"
 echo

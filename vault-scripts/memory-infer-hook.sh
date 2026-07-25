@@ -11,9 +11,9 @@ PROJECTS_BASE="$HOME/.claude/projects"
 QUEUE_FILE="$HOME/vault/memory-review-queue.jsonl"
 HOOKS_LOG="$HOME/vault/logs/hooks.jsonl"
 INFER_LOG="$HOME/vault/logs/memory-infer.log"
-# Default memory dir (used when cwd-derived path is missing); this is the
-# canonical memory location for the Projects umbrella on this harness.
-MEMORY_DIR_DEFAULT="$PROJECTS_BASE/-Users-tarang-Documents-Projects/memory"
+# Fallback memory dir when the session cwd can't be derived (rare). Generic bucket —
+# the real path is cwd-derived in the normal branch below (project-scoped, portable).
+MEMORY_DIR_DEFAULT="$PROJECTS_BASE/-default/memory"
 START_TS=$(date +%s)
 
 mkdir -p "$(dirname "$HOOKS_LOG")" "$(dirname "$INFER_LOG")" "$(dirname "$QUEUE_FILE")"
@@ -247,7 +247,7 @@ SYS_PROMPT='You infer DURABLE facts about how Tarang works, prefers, and decides
 
 if [ "${1:-}" = "selftest" ]; then
   SESSION_ID="selftest"
-  SESSION_CWD="/Users/tarang/Documents/Projects/claude-harness"
+  SESSION_CWD="${HOME}/Documents/Projects/claude-harness"
   echo "[selftest] mode — canned digest, no stdin/guards"
   CANNED_DIGEST='USER: implement the foo() function in service.py
 ASSISTANT: I will create foo() using the pymongo driver.

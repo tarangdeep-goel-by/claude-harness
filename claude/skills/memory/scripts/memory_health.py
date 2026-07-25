@@ -31,9 +31,11 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 
 # ── Constants (copied from apply_memory.py to stay self-contained — no cross-import) ──
-DEFAULT_MEMORY_DIR = os.path.expanduser(
-    "~/.claude/projects/-Users-tarang-Documents-Projects/memory"
-)
+# Project-scoped memory dir, derived from CLAUDE_PROJECT_DIR (or cwd) — portable, matches
+# Claude Code's per-project memory layout. Override with --memory-dir.
+_CPD = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+_proj_slug = "-" + _CPD.lstrip("/").replace("/", "-")
+DEFAULT_MEMORY_DIR = os.path.join(os.path.expanduser("~/.claude/projects"), _proj_slug, "memory")
 CONF_RANK = {"high": 0, "medium": 1, "low": 2}  # lower sorts first
 
 HOME = os.path.expanduser("~")

@@ -28,9 +28,6 @@ For each document, add it as a source to the notebook:
 ```bash
 # For text/markdown files — use text source
 nlm source add <notebook-id> --text "$(cat <file>)" --title "<filename>"
-
-# For files on Google Drive (if uploaded via upload_to_gdrive.sh)
-nlm source add <notebook-id> --drive "<drive-url>"
 ```
 
 ### 5. Optionally generate audio overview

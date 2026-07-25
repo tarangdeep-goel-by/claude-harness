@@ -10,15 +10,9 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VAULT_DST="$HOME/Documents/vault-work"
 [ "${1:-}" = "--vault" ] && VAULT_DST="${2:?--vault needs a path}"
 
-# Owner vs adopter. Owner links everything; adopter skips skills that hard-code a
-# specific data stack (see SM_COUPLED_SKILLS). Set HARNESS_OWNER=1 or pass --owner.
+# Owner vs adopter. Owner mode seeds the full settings.json; adopters get the lighter
+# settings.adopter.json. Set HARNESS_OWNER=1 or pass --owner.
 if [ "${HARNESS_OWNER:-}" = "1" ] || [ "${1:-}" = "--owner" ]; then OWNER=1; else OWNER=0; fi
-
-# Skills that are NOT data-stack-agnostic — they hard-code the sm-analytics / Mixpanel
-# data layer, so they're broken-on-arrival for an adopter without it. Excluded from
-# adopter installs (owner still gets them). Remove a name here to re-enable it once
-# that stack is public.
-SM_COUPLED_SKILLS="analysis capture-journey-generic"
 
 # Symlink src → dst, replacing whatever is currently at dst (file, dir, or stale link).
 link() {
@@ -45,29 +39,35 @@ mkdir -p \
 # 2. Make repo scripts executable.
 chmod +x "$REPO"/claude/scripts/*.sh "$REPO"/vault-scripts/*.sh 2>/dev/null || true
 
-# 3. Global Claude config.
-if [ -f "$HOME/.claude/settings.json" ]; then
-  echo "  settings.json exists — left as-is"
-elif [ "$OWNER" = "1" ]; then
-  echo "  owner mode — seeding settings.json from claude/settings.json"
-  cp "$REPO/claude/settings.json" "$HOME/.claude/settings.json"
+# 3. Global Claude config. The harness OWNS settings.json (all hooks live here); personal/machine
+#    config belongs in settings.local.json, which Claude Code merges over settings.json and updates
+#    never touch. An EXISTING settings.json WITHOUT the harness hooks is the silent-inert trap —
+#    the harness loads with no hooks and no error. So take ownership *safely*: back it up, migrate
+#    the user's personal keys into settings.local.json, then install the harness copy.
+SETTINGS_SRC="$REPO/claude/settings.adopter.json"; [ "$OWNER" = "1" ] && SETTINGS_SRC="$REPO/claude/settings.json"
+if [ ! -f "$HOME/.claude/settings.json" ]; then
+  cp "$SETTINGS_SRC" "$HOME/.claude/settings.json"
+  echo "  settings.json seeded from ${SETTINGS_SRC##*/}"
+elif grep -q 'vault/scripts\|warm-start\.sh' "$HOME/.claude/settings.json" 2>/dev/null; then
+  echo "  settings.json already has harness hooks — left as-is"
 else
-  echo "  adopter settings seeded from claude/settings.adopter.json"
-  cp "$REPO/claude/settings.adopter.json" "$HOME/.claude/settings.json"
+  ts="$(date -u +%Y%m%dT%H%M%SZ)"
+  cp "$HOME/.claude/settings.json" "$HOME/.claude/settings.json.pre-harness-$ts"
+  # Preserve personal config as a local override — everything EXCEPT hooks (which come from the harness).
+  if command -v jq >/dev/null 2>&1 && [ ! -f "$HOME/.claude/settings.local.json" ]; then
+    jq 'del(.hooks)' "$HOME/.claude/settings.json" > "$HOME/.claude/settings.local.json" 2>/dev/null \
+      && echo "  migrated your personal settings → settings.local.json (updates never touch it — review it)"
+  fi
+  cp "$SETTINGS_SRC" "$HOME/.claude/settings.json"
+  echo "  ⚠ your settings.json had NO harness hooks (the harness would have been INERT)."
+  echo "    backed up → settings.json.pre-harness-$ts; the harness now owns settings.json."
+  echo "    put machine-specific config in ~/.claude/settings.local.json; RESTART Claude Code to load hooks."
 fi
 link "$REPO/claude/scripts/warm-start.sh" "$HOME/.claude/scripts/warm-start.sh"
 
 # 4. Global skills (one symlink per skill dir; coexists with plugin-managed skills).
-# Adopter installs skip SM-coupled skills (owner-only until the data stack is public).
 for s in "$REPO"/claude/skills/*/; do
   name="$(basename "$s")"
-  case " $SM_COUPLED_SKILLS " in
-    *" $name "*)
-      if [ "$OWNER" != "1" ]; then
-        echo "  skipped $name (SM-coupled — needs the sm-analytics/Mixpanel data layer)"
-        continue
-      fi ;;
-  esac
   link "${s%/}" "$HOME/.claude/skills/$name"
 done
 
@@ -91,7 +91,7 @@ fi
 
 echo ""
 echo "✓ Harness + vault scaffold installed.  Next (in order):"
-echo "  1) ./bootstrap.sh                                         deps: jq, qmd, gh, gog, rclone"
+echo "  1) ./bootstrap.sh                                         deps: jq, qmd, gh, python3"
 echo "  2) bash \"$VAULT_DST/System/scripts/setup-work-machine.sh\"   qmd index, transcription models, launchd"
 echo "  3) copy secrets → ~/.claude + ~/code/.env                 (see SECRETS.md)"
 echo "  4) connect MCP (Slack/Linear/PostHog) in claude.ai, then RESTART Claude Code"

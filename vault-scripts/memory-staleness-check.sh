@@ -15,7 +15,7 @@
 #   - Log run to ~/vault/logs/hooks.jsonl. Always exit 0.
 set -uo pipefail
 
-MEMORY_DIR="$HOME/.claude/projects/-Users-tarang-Documents-Projects/memory"
+# MEMORY_DIR derived below from the session cwd (portable — no hardcoded path).
 QUEUE="$HOME/vault/memory-review-queue.jsonl"
 STATE="$HOME/vault/logs/memory-staleness-state.json"
 HOOKS_LOG="$HOME/vault/logs/hooks.jsonl"
@@ -37,6 +37,21 @@ except Exception:
 cwd = d.get("cwd", "") or ""
 print(os.path.basename(cwd.rstrip("/")) or "unknown")
 ' 2>/dev/null || echo "unknown")
+
+# Memory dir is project-scoped, derived from the session cwd (portable — matches Claude Code's
+# per-project memory layout). Guard: no dir → log skip + exit 0 (avoids a root-level glob).
+PROJECTS_BASE="$HOME/.claude/projects"
+SESSION_CWD="$(printf '%s' "$INPUT" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('cwd',''))" 2>/dev/null || true)"
+if [ -n "$SESSION_CWD" ]; then
+  MEMORY_DIR="$PROJECTS_BASE/$(echo "$SESSION_CWD" | tr '/' '-')/memory"
+else
+  MEMORY_DIR=""
+fi
+if [ ! -d "$MEMORY_DIR" ]; then
+  printf '{"ts":"%s","hook":"memory-staleness","outcome":"skip","detail":"no-memory-dir"}\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$HOOKS_LOG" 2>/dev/null || true
+  exit 0
+fi
 
 MS_MEMORY_DIR="$MEMORY_DIR" \
 MS_QUEUE="$QUEUE" \

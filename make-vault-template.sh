@@ -19,9 +19,9 @@ say(){ printf '  %s\n' "$*"; }
 # KEEP: recall, vault-push, vault-audit, stats, infra-health, humanizer, drawio,
 #       karpathy-guidelines, find-skills, reflect, transcriber, dev-task, update-config,
 #       scribe, sorter, compiler (generic capture/continuity).
-# STRIP: all company-data and product-domain skills — they encode Stable Money's specific
-#        data stack (Mixpanel project IDs, Metabase DB schemas, product funnels, referral
-#        business logic) and are not meaningful to an outside adopter.
+# STRIP: all company-data and product-domain skills — they encode a specific company's
+#        data stack (product analytics, DB schemas, funnels, business logic) and are
+#        not meaningful to an outside adopter.
 DOMAIN_SKILLS="analysis metabase-query metabase-instrumentation mixpanel-analytics mixpanel-instrumentation mixpanel-chart-builder referral-investigation referral-forensics capture-journey capture-journey-generic play-console flutter-dev sm-design-system"
 
 echo "Regenerating $VT from $SRC (knowledge-stripped)"

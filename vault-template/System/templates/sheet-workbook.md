@@ -5,7 +5,7 @@
 > evidence**; mandated tab order **README → Summary → Methodology → Trend → deep-dives**; every tab
 > self-explanatory; ONE generating script + ONE collating doc (this file); mirror live edits to the script.
 
-- **Live sheet:** id `<SHEET_ID>` · Drive folder `<FOLDER_ID>`
+- **Live sheet:** id `<SHEET_ID>`
 - **Window / headline:** `<window>` — `<the one-line answer + key numbers>`
 - **Source:** `<DBs / tables / APIs>`. READ-ONLY. Needs `<creds / VPN>`.
 - Run with `<venv python>` from this `scripts/` dir.
@@ -17,11 +17,8 @@
 PY=<venv python>
 $PY <main_pipeline_script>.py <args>     # builds <N> of <M> tabs in one run
 # <any separate steps, e.g. a different-cohort tab>
-# publish in place (keep the sheet id):
-rclone copyto out.xlsx.xlsx "gdrive:<name>.xlsx" --drive-import-formats xlsx
+# publish to your sheet via your own Sheets/Drive workflow
 ```
-> Native-Sheet `.xlsx`-name quirk: name the local file `<name>.xlsx.xlsx` + `--drive-import-formats xlsx`
-> to update in place and keep the id (see [[reference-cx-reward-reconciliation]]).
 
 ## Pipeline — who builds what
 | Script | Produces / owns |
