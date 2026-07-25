@@ -106,6 +106,10 @@ SECRETS.example.md            what to copy in by hand (never committed)
   `sorter`, `compiler`, `export` (capture). Agent: `librarian`. Plus the slash commands.
 - All shipped skills are **dev-focused and data-stack-agnostic**. Bring your own product/analytics
   skills under your vault's `.claude/skills/` as needed.
+- **Skill retrieval at task-start** — a `UserPromptSubmit` hook (`skill-retrieval-hook.sh`) runs
+  QMD top-k over skill descriptions and surfaces matching skills as context, so the right skill
+  loads before answering (especially helps GLM, which under-triggers skills). Needs the `skills` qmd
+  collection (built by `install.sh` + refreshed by warm-start).
 
 ### Telemetry (local — nothing leaves your machine)
 Every hook logs to `~/vault/logs/hooks.jsonl`; **skill + subagent** invocations are captured by

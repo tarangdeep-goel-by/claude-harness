@@ -53,9 +53,10 @@ ls -la ~/.claude/skills/recall ~/vault/scripts/file-guard-hook.sh   # both → s
 ./bootstrap.sh             # required: jq, python3. best-effort: gh, qmd
 ```
 Re-run `verify-setup.sh` → the `dependencies` block should go ✓. Notes:
-- **`qmd`** (hybrid search powering `/recall` topic search + vault indexing) most often needs
-  manual install (Node ≥22 or Bun), then `qmd update && qmd embed`. Without it `/recall` still
-  works via direct file reads — only search degrades.
+- **`qmd`** (hybrid search powering `/recall`, the task-start **skill-retrieval** hook, + vault
+  indexing) most often needs manual install (Node ≥22 or Bun), then `qmd update && qmd embed`.
+  Without it `/recall` still works via direct file reads and skill-retrieval no-ops — only search
+  degrades.
 - **memory-infer** (auto-suggests durable memories at session end) needs a z.ai GLM-4.7 bearer
   key at `~/.config/claude-glm/key`. Without it the hook no-ops (non-blocking).
 

@@ -71,6 +71,9 @@ for s in "$REPO"/claude/skills/*/; do
   link "${s%/}" "$HOME/.claude/skills/$name"
 done
 
+# 4b. Build the QMD skill-retrieval index (powers the skill-retrieval UserPromptSubmit hook).
+[ -x "$REPO/vault-scripts/build-skill-index.sh" ] && bash "$REPO/vault-scripts/build-skill-index.sh" 2>/dev/null || true
+
 # 5. Vault hook + automation scripts.
 for f in "$REPO"/vault-scripts/*; do
   name="$(basename "$f")"

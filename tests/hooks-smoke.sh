@@ -52,6 +52,14 @@ run "$WG" "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$SB/code/my-a
 run "$WG" "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$SB/code/.worktrees/my-app__t/x.py\"}}"; ! printf '%s' "$OUT" | grep -q '"deny"'; chk "worktree-guard ALLOWS edit in a worktree" $?
 unset WORKTREE_GUARD_CODE WORKTREE_GUARD_REPOS
 
+# skill-retrieval-hook: guard-logic check (needs no qmd). Short prompt → silent + exit 0.
+# (Functional top-k retrieval is verified manually — it needs the qmd `skills` collection, which
+# can't be provisioned inside this throwaway HOME.)
+SR="$REPO/vault-scripts/skill-retrieval-hook.sh"
+run "$SR" '{"prompt":"hi","cwd":"'"$SB"'"}'
+if [ "$RC" = 0 ] && [ -z "$OUT" ]; then chk "skill-retrieval: silent + exit 0 on short prompt" 0
+else chk "skill-retrieval: silent + exit 0 on short prompt" 1; fi
+
 rm -rf "$SB"
 echo
 if [ "$FAIL" = 0 ]; then echo "✓ hooks-smoke PASSED"; else echo "✗ hooks-smoke FAILED"; exit 1; fi

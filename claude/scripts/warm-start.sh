@@ -631,6 +631,9 @@ flush_previous_session() {
       fi
       if mkdir "$qmd_lock" 2>/dev/null; then
         trap 'rmdir "$qmd_lock" 2>/dev/null || true' EXIT
+        # Refresh the skills collection (mtime-guarded no-op if fresh) so the skill-retrieval
+        # UserPromptSubmit hook can query it. Must precede qmd update/embed.
+        [ -x "$HOME/vault/scripts/build-skill-index.sh" ] && bash "$HOME/vault/scripts/build-skill-index.sh" 2>/dev/null || true
         if [ -n "$TIMEOUT_BIN" ]; then
           "$TIMEOUT_BIN" 120 qmd update 2>/dev/null || true
           "$TIMEOUT_BIN" 120 qmd embed  2>/dev/null || true
