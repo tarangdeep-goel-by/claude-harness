@@ -69,7 +69,7 @@ STAGED_ADRS="$(printf '%s\n' "$STAGED_ALL" | grep -E '^Notes/[^/]+/decisions/.+\
 if [[ -n "$STAGED_ADRS" ]]; then
     _fm_val() {  # $1=content $2=field → value (comment + quotes stripped)
         printf '%s\n' "$1" | grep -m1 "^$2:" | sed "s/^$2:[[:space:]]*//; s/[[:space:]]*#.*\$//; s/\"//g; s/[[:space:]]*\$//"
-    fi
+    }
     _norm_ref() { printf '%s' "$1" | sed -E 's/^\[\[//; s/\]\]$//; s/\.md$//'; }  # strip [[ ]] + .md
 
     adr_violations=0

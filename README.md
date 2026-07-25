@@ -93,7 +93,7 @@ read-session.sh               print one Claude Code session's conversation, tool
 catalog-chats.sh              map your claude.ai/desktop chats from a data export (conversations.json)
 read-chat.sh                  print one claude.ai chat's conversation
 ADOPT_FROM_HISTORY.md         playbook: build a populated vault from Claude Code sessions AND chats
-SECRETS.md                    what to copy in by hand (never committed)
+SECRETS.example.md            what to copy in by hand (never committed)
 ```
 
 ### Skills
