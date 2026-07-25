@@ -3,6 +3,22 @@
 > Temporal spine for the claude-harness workspace (the Claude Code harness config: hooks, skills,
 > memory infra). Newest-first. Slice on `## YYYY-MM-DD`. Throughline in `PROJECT_ARC.md`.
 
+## 2026-07-26 · a8b1ae19 · dev · Public v0.4.0 release + Hermes mechanism #2 (skill-retrieval)
+
+- **Dev-focused public fork v0.4.0** (`1e15739`): stripped SM-coupled skills + SM refs; brought the
+  workflow-engine family (workflow-engine/task-triage/debug-escalation/done-gate/review-merge/karpathy)
+  into the repo, all live-symlinked. Hardcoded `/Users/tarang` → cwd-derived slugs in memory hooks.
+  Distilled `CLAUDE.md`. Removed the telemetry-upload pipeline (Drive/rclone) + gog/rclone deps.
+- **Public release**: `git filter-repo` purged `plans/` (personal info) + `--force-with-lease` push;
+  MIT LICENSE, README polish, generic pre-commit; PRIVATE→PUBLIC; description + topics; deleted
+  `feat/memory-infra`. Repo: github.com/tarangdeep-goel-by/claude-harness.
+- **Hermes #2 shipped** (`d8836ae`, `bb4984d`): `skill-retrieval-hook.sh` (UserPromptSubmit) runs
+  `qmd query <prompt> -c skills -n 3` over descriptions staged by `build-skill-index.sh`; injects
+  top-3 score ≥0.5 as additionalContext, silent below. Wired into settings.adopter.json + install
+  + warm-start + live settings.json. 4 bugs fixed (macOS timeout, python stdin/env, import sys,
+  qmd --min-score).
+- Links: [[a8b1ae19]] (handoff); plan `plans/vast-splashing-wirth.md`.
+
 ## 2026-07-06 · 5927821f · dev · Memory quality loop + precompact state preservation
 
 - **Q1–Q5 shipped + merged to main (`03e9561`).** Closed the 5-step quality loop:

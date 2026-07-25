@@ -3,6 +3,21 @@
 Project-level todos. Vault-push owns this file: add new, tick done, carry the rest.
 Cross-cutting/ops todos live in the global `System/dashboards/Open Items.md` (not this file).
 
+## Skill retrieval + sync (2026-07-26)
+
+- [ ] **Confirm skill-retrieval end-to-end.** A `qmd embed -f` was killed mid-run (may have half-done
+      the embeddings); `build-skill-index.sh` rebuild was in flight at session end. Verify `qmd query
+      "fix failing test" -c skills` returns debug-escalation AND the live hook emits for a debug
+      prompt. [src: handoff a8b1ae19]
+- [ ] **Sync architecture decision (pending user).** Option A: split personal →
+      `~/.claude/settings.local.json` + symlink `settings.json` → repo `settings.adopter.json` +
+      SessionStart re-link guard (true bidirectional auto-sync). vs leave-as-is (manual per-hook add).
+- [ ] **Hermes mechanism #1 — autonomous skill-distillation Stop hook.** Stop hook → `skill-creator`
+      drafts candidate SKILL.md into a review queue after a hard task verifies green. Deferred
+      (separate plan); compounds with #2.
+- [x] **Hermes mechanism #2 — skill retrieval at task-start.** Shipped (`d8836ae`, `bb4984d`).
+      (2026-07-26)
+
 ## Memory infra
 
 - [ ] **S3 safe-archive (~19 files).** User-scoped to "safe archive only." Archive the ~19 pure-noise
