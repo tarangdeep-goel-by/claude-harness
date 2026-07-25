@@ -39,9 +39,11 @@ TIMEOUT_BIN=""
 command -v timeout  >/dev/null 2>&1 && TIMEOUT_BIN=timeout
 [ -z "$TIMEOUT_BIN" ] && command -v gtimeout >/dev/null 2>&1 && TIMEOUT_BIN=gtimeout
 
-# Top-k retrieval (hybrid BM25 + vector + rerank). --min-score filters in qmd; --json for parsing.
+# Top-k retrieval (hybrid BM25 + vector + rerank). Threshold filtering is done in python below
+# (qmd's --min-score filters on a different/internal score and behaves inconsistently — trust the
+# rerank `score` field in the JSON, which the python checks against MIN_SCORE).
 # stderr discarded (qmd progress chatter); the sed cuts any preamble before the JSON array.
-RAW=$(${TIMEOUT_BIN:+$TIMEOUT_BIN 5} qmd query "$PROMPT" -c skills -n 3 --min-score "$MIN_SCORE" --json 2>/dev/null || true)
+RAW=$(${TIMEOUT_BIN:+$TIMEOUT_BIN 5} qmd query "$PROMPT" -c skills -n 3 --json 2>/dev/null || true)
 [ -z "$RAW" ] && exit 0
 JSON=$(printf '%s' "$RAW" | sed -n '/^[[:space:]]*\[/,$p' | head -c 20000)
 [ -z "$JSON" ] && exit 0
