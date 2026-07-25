@@ -1,16 +1,13 @@
 #!/usr/bin/env bash
 # vault-work pre-commit hook
 # ---------------------------
-# Catches the same drift patterns enforced by
-# Notes/referral-program/scripts/tests/unit/test_no_drift.py at commit time.
+# Enforces the vault's structural invariants at commit time:
+#   (L0) a commit staging a PROJECT_LOG must also stage RESUME.md, and a staged
+#        RESUME.md must be well-formed (last_touched → real ## <project> section);
+#   (ADR) staged decision records carry a closed-enum status:, and any
+#         supersedes:/builds_on: link resolves to a real sibling ADR.
 #
-# Greps STAGED .py files for banned patterns. Blocks commit if any are
-# found anywhere outside the lib (lib/sm_analytics/clients,
-# lib/sm_analytics/helpers, lib/sm_analytics/constants.py, the cohort
-# owners) and outside tests/.
-#
-# Pattern parity with test_no_drift.py — when a new test is added there,
-# add the equivalent pattern here.
+# Generic + data-stack-agnostic. Add your own domain drift patterns in the section below.
 #
 # Install: bash scripts/install-hooks.sh
 
@@ -20,6 +17,8 @@ set -euo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
+STAGED_ALL="$(git diff --cached --name-only --diff-filter=ACM || true)"
+
 # ── L0 RESUME board freshness + validity ───────────────────────────────────
 # Every session push logs project work to Notes/<project>/PROJECT_LOG.md AND bumps
 # the L0 board System/handoffs/RESUME.md (via tools/resume_board.py). Enforce both:
@@ -27,9 +26,6 @@ cd "$REPO_ROOT"
 #       silently went stale — the failure mode the board exists to prevent), and
 #   (b) if RESUME.md is staged it must be well-formed: a `last_touched:` that points
 #       at a real `## <project>` section (catches a fumbled hand-edit).
-# Runs before the .py early-exit so markdown-only pushes are still checked.
-STAGED_ALL="$(git diff --cached --name-only --diff-filter=ACM || true)"
-
 if echo "$STAGED_ALL" | grep -qE '^Notes/[^/]+/PROJECT_LOG\.md$' \
    && ! echo "$STAGED_ALL" | grep -qE '^System/handoffs/RESUME\.md$'; then
     echo ""
@@ -63,18 +59,17 @@ if echo "$STAGED_ALL" | grep -qE '^System/handoffs/RESUME\.md$'; then
     fi
 fi
 
-# ── ADR integrity (System/KNOWLEDGE.md Pillar 1/2) ──────────────────────────
+# ── ADR integrity ──────────────────────────────────────────────────────────
 # Staged decision records must carry a closed-enum status:, and any
 # supersedes:/builds_on: link must resolve to a real sibling ADR. supersedes:
 # additionally requires its target to be marked status: superseded — the
 # bidirectional supersession the semantic-memory law mandates. builds_on: is
-# non-retiring lineage (target just has to exist). Runs before the .py
-# early-exit so ADR-only commits are still checked.
+# non-retiring lineage (target just has to exist).
 STAGED_ADRS="$(printf '%s\n' "$STAGED_ALL" | grep -E '^Notes/[^/]+/decisions/.+\.md$' || true)"
 if [[ -n "$STAGED_ADRS" ]]; then
     _fm_val() {  # $1=content $2=field → value (comment + quotes stripped)
         printf '%s\n' "$1" | grep -m1 "^$2:" | sed "s/^$2:[[:space:]]*//; s/[[:space:]]*#.*\$//; s/\"//g; s/[[:space:]]*\$//"
-    }
+    fi
     _norm_ref() { printf '%s' "$1" | sed -E 's/^\[\[//; s/\]\]$//; s/\.md$//'; }  # strip [[ ]] + .md
 
     adr_violations=0
@@ -84,15 +79,12 @@ if [[ -n "$STAGED_ADRS" ]]; then
         dir="$(dirname "$f")"
         st="$(_fm_val "$c" status || true)"
         if [[ -z "$st" ]]; then
-            adr_msgs+=("  $f: missing 'status:' — every ADR needs one (Pillar 1)")
+            adr_msgs+=("  $f: missing 'status:' — every ADR needs one")
             adr_violations=$((adr_violations + 1))
         elif [[ " proposed accepted superseded reversed " != *" $st "* ]]; then
             adr_msgs+=("  $f: status '$st' not in closed enum {proposed|accepted|superseded|reversed}")
             adr_violations=$((adr_violations + 1))
         fi
-        # A supersedes:/builds_on: value is an ADR ref (integrity-checked) only when it names
-        # one — a NNNN-/YYYY-prefixed stem (or a [[wikilink]], normalized above). Free-text
-        # describing a non-ADR thing it replaced (e.g. a closed program) is allowed + skipped.
         sup="$(_norm_ref "$(_fm_val "$c" supersedes || true)")"
         if [[ "$sup" =~ ^[0-9][0-9][0-9][0-9] ]]; then
             if [[ ! -f "$dir/$sup.md" ]]; then
@@ -114,7 +106,7 @@ if [[ -n "$STAGED_ADRS" ]]; then
     done
     if [[ $adr_violations -gt 0 ]]; then
         echo ""
-        echo "❌ Pre-commit: $adr_violations ADR-integrity violation(s) (System/KNOWLEDGE.md Pillar 1/2):"
+        echo "❌ Pre-commit: $adr_violations ADR-integrity violation(s):"
         printf '%s\n' "${adr_msgs[@]}"
         echo ""
         echo "   Fix the frontmatter, or --no-verify for a deliberate exception."
@@ -122,249 +114,12 @@ if [[ -n "$STAGED_ADRS" ]]; then
     fi
 fi
 
-STAGED_PY="$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$' || true)"
-
-if [[ -z "$STAGED_PY" ]]; then
-    exit 0
-fi
-
-# Files to ignore: tests/, the lib's owner files, and the shim (which is
-# already deleted but defensively skip).
-should_skip() {
-    local f="$1"
-    case "$f" in
-        */tests/*) return 0 ;;
-        Notes/referral-program/scripts/referral_lib/*) return 0 ;;
-        lib/sm_analytics/clients/metabase.py) return 0 ;;
-        lib/sm_analytics/clients/mixpanel.py) return 0 ;;
-        lib/sm_analytics/clients/controlhub.py) return 0 ;;
-        lib/sm_analytics/clients/play_console.py) return 0 ;;   # owner of the Play Console curl pattern
-        lib/sm_analytics/clients/app_store_connect.py) return 0 ;;   # owner of the ASC curl pattern
-        lib/sm_analytics/clients/cache.py) return 0 ;;
-        lib/sm_analytics/clients/sheets.py) return 0 ;;   # owner of the Sheets/Drive patterns
-        lib/sm_analytics/constants.py) return 0 ;;
-        # Vendored mirror (Viral's canonical googleapiclient pipeline) + one-off
-        # forensics (legitimate `rclone backend copyid` exports) — out of scope,
-        # mirrors test_no_drift.py's _sheets_scan_files() exclusions.
-        */supporting_docs/*) return 0 ;;
-        */investigations/*) return 0 ;;
-        lib/sm_analytics/helpers/*) return 0 ;;
-        lib/sm_analytics/cohorts/referral.py) return 0 ;;
-        lib/sm_analytics/cohorts/scc.py) return 0 ;;
-        lib/sm_analytics/rewards.py) return 0 ;;
-        # Phase J: legacy tag scripts that built live experiments before
-        # the universal experiment_id/experiment_arm convention.
-        # Allowlisted until migration script lands.
-        */tag_experiment_cohort.py) return 0 ;;
-        */tag_experiment_product.py) return 0 ;;
-        */retag_treatment_arm_by_product.py) return 0 ;;
-        */retag_control_arm_by_product.py) return 0 ;;
-        # Chart-builder owns the resourceType coercion helper
-        .claude/skills/mixpanel-chart-builder/scripts/commit_chart.py) return 0 ;;
-        # Cohort-DEFINITION payloads use resourceType "user" by design
-        # (UI-native shape; the "people" rule is chart-specs-only).
-        # See test_no_drift.py COHORT_DEFINITION_SCRIPTS.
-        */n1_fix_platform_age_cohorts.py) return 0 ;;
-        # Standalone teammate-portable mirrors of canonical pipelines —
-        # cannot import the lib by design (see STANDALONE_SCRIPTS in
-        # tests/unit/test_no_drift.py for the rationale).
-        Notes/referral-program/scripts/aop_monthly_grid_lite.py) return 0 ;;
-    esac
-    return 1
-}
-
-# Per-file allowlist for the strict-bond pattern: scripts where a loose
-# bond filter is intentionally used (mirrors LOOSE_BOND_OK in
-# test_no_drift.py). Other patterns ignore this list.
-is_loose_bond_ok() {
-    local f
-    f="$(basename "$1")"
-    case "$f" in
-        referral_bond_cohort_net_aum.py) return 0 ;;
-        referral_investigation.py) return 0 ;;
-        referral_family_aum_analysis.py) return 0 ;;
-        referral_personalization_analysis.py) return 0 ;;
-        referral_trigger_analysis.py) return 0 ;;
-        referral_timing_analysis.py) return 0 ;;
-        referral_zero_investment_sharer_journey.py) return 0 ;;
-    esac
-    return 1
-}
-
-# Parallel arrays — patterns may contain `|` (regex alternation), so we
-# can't use a single-string delimited format.
-declare -a PATTERNS
-declare -a MESSAGES
-declare -a FLAGS_LOOSE_BOND_OK    # "1" honors LOOSE_BOND_OK, "0" always blocks
-declare -a FLAGS_CASE_INSENSITIVE # "1" passes -i to grep
-
-add_pattern() {
-    PATTERNS+=("$1")
-    MESSAGES+=("$2")
-    FLAGS_LOOSE_BOND_OK+=("$3")
-    FLAGS_CASE_INSENSITIVE+=("$4")
-}
-
-# 1. inline strict bond filter
-add_pattern \
-    "is_settled[[:space:]]*=[[:space:]]*TRUE" \
-    "inline strict bond filter — use MetabaseClient.fetch_bond_txns()" \
-    "1" "0"
-# 2. inline FD success filter
-add_pattern \
-    "payment_status[[:space:]]*=[[:space:]]*'SUCCESS'" \
-    "inline FD success filter — use C.FD_SUCCESS_FILTER_SQL or fetch_fd_txns()" \
-    "0" "0"
-# 3. inline MF completion filter
-add_pattern \
-    "ORDER_UNITS_ALLOCATED.*type[[:space:]]*=[[:space:]]*'PURCHASE'" \
-    "inline MF completion filter — use C.MF_COMPLETED_FILTER_SQL or fetch_mf_txns()" \
-    "0" "0"
-# 4. inline reward filter
-add_pattern \
-    "reward_delivery_status[[:space:]]*=[[:space:]]*'SENT_FROM_BACKEND'" \
-    "inline reward filter — use C.REWARD_SENT_FILTER_SQL or fetch_rewards()" \
-    "0" "0"
-# 5. hardcoded Rs 5K bond cap
-add_pattern \
-    "(\\b5_?000(\\.0)?\\b.*(bond|cap|reward)|(bond|cap|reward).*\\b5_?000(\\.0)?\\b)" \
-    "hardcoded Rs 5K bond cap — import BOND_REWARD_CAP_PER_CHILD from sm_analytics.cohorts.referral" \
-    "0" "1"
-# 6. hardcoded 1% bond rate
-add_pattern \
-    "(rate|pct|percentage|reward_rate|reward_pct|bond_reward_rate)[\"']?[[:space:]]*[=:][[:space:]]*0\\.01\\b" \
-    "hardcoded 1% bond rate — import BOND_REWARD_PCT from sm_analytics.cohorts.referral" \
-    "0" "1"
-# 7. hardcoded FD commission rate
-add_pattern \
-    "0\\.005[[:space:]]*/[[:space:]]*365" \
-    "hardcoded FD commission rate — use helpers.financial.commission_fd()" \
-    "0" "0"
-# 8. hardcoded SCC cashback rate
-add_pattern \
-    "(\\b0\\.005\\b.*(cashback|spend)|(cashback|spend).*\\b0\\.005\\b)" \
-    "hardcoded SCC cashback rate — import CASHBACK_RATE from sm_analytics.cohorts.scc" \
-    "0" "1"
-# 9. hardcoded 60d eligibility window
-add_pattern \
-    "timedelta[[:space:]]*\\([[:space:]]*days[[:space:]]*=[[:space:]]*60\\b" \
-    "hardcoded 60d eligibility window — compose with ELIGIBILITY_WINDOW_DAYS from sm_analytics.cohorts.referral" \
-    "0" "0"
-# 10. local UUID regex
-add_pattern \
-    "\\[0-9a-f\\]\\{8\\}-" \
-    "local UUID regex literal — use is_uuid()/is_device() from sm_analytics" \
-    "0" "0"
-# 11. raw mixpanel curl
-add_pattern \
-    "subprocess\\.run.*curl.*mixpanel\\.com" \
-    "raw curl to mixpanel.com — use MixpanelClient" \
-    "0" "0"
-# 12. raw controlhub curl
-add_pattern \
-    "subprocess\\.run.*curl.*admin-api\\.stablemoney\\.in" \
-    "raw curl to admin-api.stablemoney.in — use ControlHubClient" \
-    "0" "0"
-# 12b. raw Play Console curl (store-analytics gate, 2026-07-06)
-add_pattern \
-    "subprocess\\.run.*curl.*clients6\\.google\\.com" \
-    "raw curl to a Play Console host (clients6.google.com) — use PlayConsoleClient from sm_analytics.clients (auth via ~/.claude/.env.playconsole.json; never hardcode cookies)" \
-    "0" "0"
-# 12c. raw App Store Connect curl (store-analytics gate, 2026-07-06)
-add_pattern \
-    "subprocess\\.run.*curl.*appstoreconnect\\.apple\\.com" \
-    "raw curl to appstoreconnect.apple.com — use AppStoreConnectClient from sm_analytics.clients (auth via ~/.claude/.env.appstoreconnect.json; never hardcode cookies)" \
-    "0" "0"
-# 13/14. referral_lib import (Phase F gate)
-add_pattern \
-    "from referral_lib" \
-    "the referral_lib shim was deleted in Phase F — import from sm_analytics" \
-    "0" "0"
-add_pattern \
-    "import referral_lib" \
-    "the referral_lib shim was deleted in Phase F — import from sm_analytics" \
-    "0" "0"
-# 15. per-experiment profile property name (Phase J gate, 2026-05-12)
-add_pattern \
-    "\\b(parent_fd_reward_(arm|id)|experiment_product)\\b" \
-    "per-experiment profile property — use the universal list-valued experiment_id + experiment_arm with {exp_id}:{arm} values (see CLAUDE.md § Experiment Tagging)" \
-    "0" "0"
-# 16. resourceType "user" on chart spec (breaks Query-tab UI)
-add_pattern \
-    '"resourceType"[[:space:]]*:[[:space:]]*"user"' \
-    'resourceType:"user" — must be "people" for profile properties (silently saves but breaks Query-tab editor)' \
-    "0" "0"
-# 17. setting experiment_arm/id via $set instead of $append (clobbers prior memberships)
-add_pattern \
-    "set_profiles[^a-zA-Z_][^)]*\"experiment_(arm|id)\"" \
-    "experiment_arm/experiment_id are list-valued — use set_profiles_append (\$append/\$union), not set_profiles (\$set)" \
-    "0" "0"
-# 18. raw gspread auth (Sheets gate, 2026-06-15)
-add_pattern \
-    "gspread\\.(service_account|authorize)[[:space:]]*\\(" \
-    "raw gspread auth — use SheetsClient from sm_analytics.clients" \
-    "0" "0"
-# 19. raw google.oauth2 service-account creds (Sheets gate)
-add_pattern \
-    "google\\.oauth2|from_service_account_file" \
-    "raw google.oauth2 SA creds — use SheetsClient/DriveClient from sm_analytics.clients" \
-    "0" "0"
-# 20. hardcoded Google Sheets/Drive API or export URL (Sheets gate)
-add_pattern \
-    "sheets\\.googleapis\\.com|www\\.googleapis\\.com/(upload/)?drive|docs\\.google\\.com/spreadsheets/[^\"']*export" \
-    "hardcoded Google Sheets/Drive API URL — use DriveClient from sm_analytics.clients" \
-    "0" "0"
-# 21. rclone config-dump user-token extraction (Sheets gate)
-add_pattern \
-    "rclone.*config.*dump" \
-    "raw rclone config-dump token — use rclone_access_token from sm_analytics.clients" \
-    "0" "0"
-
-violations=0
-declare -a messages
-
-for f in $STAGED_PY; do
-    if should_skip "$f"; then
-        continue
-    fi
-    content="$(git show ":$f")"
-
-    for i in "${!PATTERNS[@]}"; do
-        pattern="${PATTERNS[$i]}"
-        message="${MESSAGES[$i]}"
-        loose_ok="${FLAGS_LOOSE_BOND_OK[$i]}"
-        case_ins="${FLAGS_CASE_INSENSITIVE[$i]}"
-
-        # Honor LOOSE_BOND_OK only for the strict-bond filter pattern
-        if [[ "$loose_ok" == "1" ]] && is_loose_bond_ok "$f"; then
-            continue
-        fi
-
-        if [[ "$case_ins" == "1" ]]; then
-            if echo "$content" | grep -Ei "$pattern" > /dev/null 2>&1; then
-                messages+=("  $f: $message")
-                violations=$((violations + 1))
-            fi
-        else
-            if echo "$content" | grep -E "$pattern" > /dev/null 2>&1; then
-                messages+=("  $f: $message")
-                violations=$((violations + 1))
-            fi
-        fi
-    done
-done
-
-if [[ $violations -gt 0 ]]; then
-    echo ""
-    echo "❌ Pre-commit hook: $violations drift violation(s) blocked the commit:"
-    echo ""
-    for m in "${messages[@]}"; do
-        echo "$m"
-    done
-    echo ""
-    echo "Either fix the script (use the lib) or skip with --no-verify if you"
-    echo "are intentionally landing legacy code."
-    exit 1
-fi
+# ── Your domain drift patterns (optional) ──────────────────────────────────
+# Add grep-based guards here for your own codebase (banned patterns, lib-usage
+# enforcement, etc.). Example:
+#   STAGED_PY="$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$' || true)"
+#   for f in $STAGED_PY; do
+#     git show ":$f" | grep -qE 'banned_pattern' && { echo "drift in $f"; exit 1; }
+#   done
 
 exit 0

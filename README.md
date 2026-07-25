@@ -4,9 +4,8 @@ A complete, shareable Claude Code working environment — the hooks, skills, ses
 scripts, settings, **and** a ready-to-fill PM knowledge-vault scaffold. Clone + `./install.sh` and a
 fresh machine has the whole system: the engine *and* an empty vault to put your own knowledge into.
 
-> Self-contained. Earlier this repo was only the *global* half (hooks + global skills) and needed a
-> separate content vault; now the project half (vault skills, templates, structure, conventions)
-> ships here as `vault-template/`, so this one repo stands up the full system.
+> Self-contained: the global engine (hooks + skills) **and** the project vault scaffold
+> (`vault-template/`) ship in one repo — `clone + ./install.sh` stands up the full system.
 
 ## New machine / new teammate
 
@@ -22,7 +21,7 @@ cd ~/code/claude-harness
                              #   AND seeds a vault from vault-template/ (only if none exists)
 ./bootstrap.sh               # deps: jq, python3; checks qmd / gh
 bash ~/Documents/vault-work/System/scripts/setup-work-machine.sh   # qmd index, transcription models, launchd
-# copy secrets into ~/.claude + ~/code/.env  (see SECRETS.md)
+# copy secrets into ~/.claude + ~/code/.env  (see SECRETS.example.md)
 # connect account-level MCP (Slack/Linear/PostHog) in claude.ai, then restart Claude Code
 ./verify-setup.sh            # run LAST (after setup-work-machine builds the qmd index); flags silent gaps
 # open ~/Documents/vault-work in Obsidian → /onboard (fill Meta/memory.md) → /start-work
@@ -98,22 +97,23 @@ SECRETS.md                    what to copy in by hand (never committed)
 ```
 
 ### Skills
-- **Global** (`claude/skills/` → `~/.claude/skills/`): `recall`, `vault-push` (session bookends) ·
-  `dev-task` (work type) · `stats`, `vault-audit`, `infra-health`, `find-skills`.
+- **Global** (`claude/skills/` → `~/.claude/skills/`): the workflow-engine family
+  (`workflow-engine`, `task-triage`, `karpathy-guidelines`, `debug-escalation`, `done-gate`,
+  `review-merge`) + `recall`, `vault-push` (session bookends) + `memory`, `reflect`, `stats`,
+  `vault-audit`, `infra-health`, `find-skills`, `drawio`, `humanizer`, `warm`. 17 skills, all
+  symlinked from this repo (drift-free).
 - **Vault** (`vault-template/.claude/skills/` → seeded into the vault): `scribe`, `transcriber`,
-  `sorter`, `compiler` (capture). Agent: `librarian`. Plus the slash commands.
-- **Domain skills stay out of the template** — add your own data-stack and product-area skills under
-  your vault's `.claude/skills/` (e.g. a Mixpanel skill encoding your event names, a Metabase skill
-  encoding your DB schema).
-- All shipped skills are dev-focused and data-stack-agnostic — bring your own product/analytics
+  `sorter`, `compiler`, `export` (capture). Agent: `librarian`. Plus the slash commands.
+- All shipped skills are **dev-focused and data-stack-agnostic**. Bring your own product/analytics
   skills under your vault's `.claude/skills/` as needed.
 
-### Telemetry (how the infra reports on itself)
-Every hook logs to `~/vault/logs/hooks.jsonl`; every **skill + subagent** invocation is captured by
-`tool-telemetry-hook.sh` (PostToolUse `Skill|Task`) → `~/vault/logs/events.jsonl`. Daily jobs →
-`daily-jobs.jsonl`; session liveness → `active-sessions/`. Run **`/infra-health`** for the rollup
-(per-hook count/failure/p50–p95, skill/subagent frequency, job freshness, unpushed-session rate).
-(`/stats` is separate — cost/token usage.)
+### Telemetry (local — nothing leaves your machine)
+Every hook logs to `~/vault/logs/hooks.jsonl`; **skill + subagent** invocations are captured by
+`tool-telemetry-hook.sh` → `~/vault/logs/workflow.jsonl`. The memory hooks (`memory-consulted`,
+`memory-validate`, `memory-staleness`, `memory-infer`) track memory quality. Session liveness →
+`active-sessions/`. Run **`/infra-health`** for the rollup (per-hook count/failure/p50–p95, skill
+frequency, job freshness, unpushed-session rate). **All telemetry stays local** — this harness ships
+no log-upload machinery. (`/stats` is separate — cost/token usage.)
 
 ### Hook scripts (`vault-scripts/`)
 - `session-marker-hook.sh` — live/parallel session heartbeats.
@@ -131,8 +131,8 @@ only "at full level" once these are in place:
 - **Your data library / venv** — whatever your analytics stack uses (a Python lib, dbt project,
   BigQuery client, etc.). Wire it into `~/code/`.
 - **MCP connectors** (claude.ai account-level — must be **connected** in this client): Slack, Linear,
-  or other integrations. Local stdio servers `tmux` + `qmd` are in `settings.json`. ⚠ Connect, then **restart**.
-- **Creds / access** (`~/code/.env` + `~/.claude`, see `SECRETS.md`): your analytics API keys,
+  or other integrations. Add local stdio servers (e.g. `tmux`, `qmd`) to `settings.json` if you want them. ⚠ Connect, then **restart**.
+- **Creds / access** (`~/code/.env` + `~/.claude`, see `SECRETS.example.md`): your analytics API keys,
   database credentials, and any API keys your data tools need.
 
 Full detail: `vault-template/System/docs/WORK_MACHINE_SETUP.md`; the paradigm:
@@ -147,8 +147,9 @@ Full detail: `vault-template/System/docs/WORK_MACHINE_SETUP.md`; the paradigm:
   regenerate `vault-template/` (knowledge-stripped, by allowlist), then commit. That's how the
   shareable harness stays current without leaking knowledge.
 
-> ⚠ `settings.json` caveat: if a tool replaces the `~/.claude/settings.json` symlink with a plain
-> file (atomic rename), re-run `./install.sh` to re-link. `git status` will show the drift.
+> ⚠ `settings.json` is **copied** (not symlinked) by `install.sh` — Claude Code owns that file. If a
+> tool overwrites it, re-run `./install.sh` to re-seed the harness hooks (your personal keys live in
+> `~/.claude/settings.local.json`, which updates never touch).
 
 ## Two vaults (don't conflate them)
 - **`~/Documents/vault-work/`** — the **knowledge vault** (Obsidian, git-tracked, your own repo).
@@ -161,3 +162,6 @@ Full detail: `vault-template/System/docs/WORK_MACHINE_SETUP.md`; the paradigm:
 ## Data (never committed)
 `~/vault/{sessions,daily,notes,logs}`, `~/.claude/{projects,history.jsonl,…}`, caches, and all
 secrets are machine-local. This repo carries only the reproducible harness + the empty scaffold.
+
+## License
+MIT — see [LICENSE](LICENSE). The bundled `humanizer` skill carries its own MIT License.
