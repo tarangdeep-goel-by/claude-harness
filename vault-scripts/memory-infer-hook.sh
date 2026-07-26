@@ -178,6 +178,24 @@ parse_and_append() {
   python3 - "$raw_path" "$queue" "$sid" "$proj" "$ts" <<'PY'
 import sys, json, re
 raw_path, queue, sid, proj, ts = sys.argv[1:6]
+def first_json_obj(text):
+    # First balanced {...} object — tolerates trailing prose (LLMs append explanation after
+    # the JSON, which makes strict json.loads raise "Extra data"). Respects string literals.
+    start = text.find("{")
+    if start == -1: raise ValueError("no JSON object found")
+    depth = 0; in_str = False; esc = False
+    for i in range(start, len(text)):
+        c = text[i]
+        if in_str:
+            if esc: esc = False
+            elif c == "\\": esc = True
+            elif c == '"': in_str = False
+        elif c == '"': in_str = True
+        elif c == "{": depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0: return json.loads(text[start:i+1])
+    raise ValueError("unbalanced braces in response")
 count = 0
 try:
     raw = open(raw_path).read()
@@ -190,7 +208,7 @@ try:
     s = txt.strip()
     s = re.sub(r"^\s*```(?:json)?\s*", "", s, flags=re.IGNORECASE)
     s = re.sub(r"\s*```\s*$", "", s).strip()
-    parsed = json.loads(s)
+    parsed = first_json_obj(s)
     cands = parsed.get("candidates", []) if isinstance(parsed, dict) else []
     with open(queue, "a") as f:
         for c in cands:
@@ -221,6 +239,24 @@ PY
 show_parsed() {
   python3 - "$1" <<'PY'
 import sys, json, re
+def first_json_obj(text):
+    # First balanced {...} object — tolerates trailing prose (LLMs append explanation after
+    # the JSON, which makes strict json.loads raise "Extra data"). Respects string literals.
+    start = text.find("{")
+    if start == -1: raise ValueError("no JSON object found")
+    depth = 0; in_str = False; esc = False
+    for i in range(start, len(text)):
+        c = text[i]
+        if in_str:
+            if esc: esc = False
+            elif c == "\\": esc = True
+            elif c == '"': in_str = False
+        elif c == '"': in_str = True
+        elif c == "{": depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0: return json.loads(text[start:i+1])
+    raise ValueError("unbalanced braces in response")
 raw = open(sys.argv[1]).read()
 try:
     d = json.loads(raw)
@@ -232,7 +268,7 @@ try:
     s = txt.strip()
     s = re.sub(r"^\s*```(?:json)?\s*", "", s, flags=re.IGNORECASE)
     s = re.sub(r"\s*```\s*$", "", s).strip()
-    parsed = json.loads(s)
+    parsed = first_json_obj(s)
     cands = parsed.get("candidates", []) if isinstance(parsed, dict) else []
     print(json.dumps(cands, indent=2, ensure_ascii=False))
 except Exception as e:
