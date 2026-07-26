@@ -1,6 +1,6 @@
 ---
 name: recall
-description: "Search past Claude Code sessions, notes, and daily entries from the local vault. Supports temporal, topic, graph, and analysis lens modes (retro, decisions, gaps, patterns, context)."
+description: "Search past Claude Code sessions, notes, and daily entries from the local vault. Use when the user says 'recall X', 'where were we', 'what did we do about X', 'remember working on X', 'look up past work on X', or wants to resume/catch up on prior sessions. Supports temporal, topic, graph, and analysis lens modes (retro, decisions, gaps, patterns, context)."
 ---
 
 # /recall — Context Memory Search

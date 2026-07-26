@@ -43,3 +43,11 @@
 - S2: canonical frontmatter schema (nested `metadata:`); validate-hook stamps `created`/`last_verified`;
   staleness-hook flags high-conf >90d + Jaccard overlap >0.5.
 - S0: safety — disabled learning-detector, archived queue, pre-memory-infra tar snapshot.
+
+## 2026-07-27 · 887fe5e4 · dev · hook timeout fix → qmd 2.5.3 + bge-m3 embed stack repair
+- Fixed UserPromptSubmit 5s timeout (skill-retrieval hook): outer 5→10s, internal 5→3s, pause-sentinel.
+- qmd 1.0.7 → 2.5.3; embedding model embeddinggemma → Qwen3 → **bge-m3** (Qwen3 GGUF deadlocks bulk embed — llama.cpp eval bug, node-llama-cpp 3.18.1).
+- Full brew+npm upgrade (~65 pkgs); mise+node25; npm allow-scripts set.
+- bge-m3 embed running (~midday ETA), monitoring cron armed.
+- Telemetry: skill-retrieval fix verified; memory-infer down (GLM z.ai out of credits — recharge); recall SKILL.md triggers strengthened.
+- [[handoff: System/handoffs/2026-07-27/887fe5e4-777e-4909-8cda-8f3e7456ccee.md]]

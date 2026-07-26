@@ -10,6 +10,11 @@
 # (install.sh + warm-start keep it fresh). If qmd or the collection is absent, the hook no-ops.
 set -uo pipefail
 
+# Pause sentinel: if present, no-op immediately. Used while `qmd embed` runs, to keep this
+# hook's queries from contending with the embedder for the local GGUF model session (which
+# otherwise surfaces as SessionReleasedError on one side or the other).
+[ -f "${HOME}/.cache/qmd/.skill-hook-paused" ] && exit 0
+
 INPUT=$(cat 2>/dev/null || echo '{}')
 
 # Extract the prompt (skip cleanly if the payload isn't JSON).
@@ -43,7 +48,10 @@ command -v timeout  >/dev/null 2>&1 && TIMEOUT_BIN=timeout
 # (qmd's --min-score filters on a different/internal score and behaves inconsistently — trust the
 # rerank `score` field in the JSON, which the python checks against MIN_SCORE).
 # stderr discarded (qmd progress chatter); the sed cuts any preamble before the JSON array.
-RAW=$(${TIMEOUT_BIN:+$TIMEOUT_BIN 5} qmd query "$PROMPT" -c skills -n 3 --json 2>/dev/null || true)
+# Internal cap (3s) sits below the harness hook timeout (10s) so a slow qmd exits cleanly as a
+# silent no-op here, instead of being killed by the outer harness timeout (which surfaces as a
+# noisy "hook timed out" error). Graceful degradation: skill suggestions no-op while qmd is slow.
+RAW=$(${TIMEOUT_BIN:+$TIMEOUT_BIN 3} qmd query "$PROMPT" -c skills -n 3 --json 2>/dev/null || true)
 [ -z "$RAW" ] && exit 0
 JSON=$(printf '%s' "$RAW" | sed -n '/^[[:space:]]*\[/,$p' | head -c 20000)
 [ -z "$JSON" ] && exit 0

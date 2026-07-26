@@ -105,7 +105,7 @@
           {
             "type": "command",
             "command": "~/vault/scripts/skill-retrieval-hook.sh",
-            "timeout": 5
+            "timeout": 10
           }
         ]
       }
