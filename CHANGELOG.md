@@ -4,6 +4,15 @@ Adopter-facing changes to the harness. Versions are git-tagged (`vX.Y.Z`); the t
 `harness_version` column reports each machine's installed sha, so you can map the fleet to a release.
 Update a machine with `./update.sh` (pulls + reconciles cleanly).
 
+## Unreleased
+
+### Added
+- Documented the inter-platform Claude Code + Codex harness contract with root `AGENTS.md`,
+  `SETUP_FOR_CODEX.md`, and README guidance. Claude Code remains supported; Codex support shares
+  `~/vault/sessions` for recall history.
+- Added Codex-native session catalog/read helpers for mining `~/.codex/sessions` beside Claude
+  Code sessions and claude.ai exports.
+
 ## 0.4.0 — 2026-07-25
 
 Dev-focused public fork: data/product-coupled skills and content stripped;

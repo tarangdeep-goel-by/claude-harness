@@ -1,0 +1,47 @@
+# Sanitized Codex configuration example for the shared harness.
+# Copy selected sections into ~/.codex/config.toml and replace placeholders locally.
+
+model = "gpt-5"
+model_reasoning_effort = "high"
+personality = "pragmatic"
+
+[features]
+codex_hooks = true
+memories = true
+
+[mcp_servers.tmux]
+command = "npx"
+args = [
+    "-y",
+    "tmux-mcp",
+    "--shell-type=zsh",
+]
+
+[mcp_servers.gemini-bridge]
+command = "/Users/<you>/Documents/Projects/gemini-bridge/.venv/bin/python"
+args = ["/Users/<you>/Documents/Projects/gemini-bridge/server.py"]
+enabled = false
+
+[mcp_servers.gemini-bridge.env]
+GEMINI_API_KEY = "REPLACE_WITH_GEMINI_API_KEY"
+
+[mcp_servers.code_graph]
+command = "node"
+# Local plugin cache path. Update the version/path if your installed plugin differs.
+args = ["/Users/<you>/.codex/plugins/cache/code-graph-mcp/code-graph-mcp/0.105.0/scripts/mcp-launcher.js"]
+
+[plugins."visualize@openai-bundled"]
+enabled = true
+
+[plugins."browser@openai-bundled"]
+enabled = true
+
+[plugins."codex@openai-codex"]
+enabled = true
+
+[plugins."code-graph-mcp@code-graph-mcp"]
+enabled = true
+
+[memories]
+generate_memories = true
+use_memories = true

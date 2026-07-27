@@ -1,11 +1,18 @@
 # claude-harness
 
-A complete, shareable Claude Code working environment — the hooks, skills, session-continuity
-scripts, settings, **and** a ready-to-fill PM knowledge-vault scaffold. Clone + `./install.sh` and a
-fresh machine has the whole system: the engine *and* an empty vault to put your own knowledge into.
+A complete, shareable Claude Code + Codex working environment — hooks, skills,
+session-continuity scripts, settings, Codex operating docs, **and** a ready-to-fill PM
+knowledge-vault scaffold. Clone + setup gives a fresh machine the whole inter-platform harness:
+the engine *and* an empty vault to put your own knowledge into.
 
 > Self-contained: the global engine (hooks + skills) **and** the project vault scaffold
 > (`vault-template/`) ship in one repo — `clone + ./install.sh` stands up the full system.
+
+Claude Code remains supported by `CLAUDE.md`, `claude/**`, and the existing Claude hooks/skills.
+Codex support is additive: Codex reads `AGENTS.md`, uses Codex-side setup from
+`SETUP_FOR_CODEX.md`, and shares the same `~/vault/sessions` history archive for recall.
+Claude Code, Claude export, and Codex sessions stay in their native caches, then export into the
+shared archive with source frontmatter.
 
 ## New machine / new teammate
 
@@ -13,6 +20,10 @@ fresh machine has the whole system: the engine *and* an empty vault to put your 
 > `SETUP_FOR_CLAUDE.md` and get my machine fully set up — walk me through each step and verify it."*
 > It's the ordered, self-verifying runbook (bootstrap → secrets → telemetry → verify → onboard →
 > history back-fill). The manual steps below are the same thing by hand.
+
+> **Prefer to have Codex drive it?** Open Codex in this repo and paste: *"Read
+> `SETUP_FOR_CODEX.md` and get Codex using this harness — walk me through each step and verify it."*
+> Codex setup is an inter-platform add-on; it does not remove or replace the Claude Code path.
 
 ```bash
 git clone <this-repo> ~/code/claude-harness
@@ -52,13 +63,16 @@ start empty — mine your own history into a populated vault so the onboarding p
 #    claude.ai → Settings → Privacy → Export data → email zip → unzip → conversations.json
 ./catalog-chats.sh conversations.json 30       # map recent chats the same way
 
-# then, in the seeded vault, tell Claude:
-#   "Read ADOPT_FROM_HISTORY.md and build my vault from my last 30 days — projects, KBs, arcs,
+# C) Codex (local):
+./catalog-codex-sessions.sh 30                 # map recent Codex sessions from ~/.codex/sessions
+
+# then, in the seeded vault, tell your agent:
+#   "Read ADOPT_FROM_HISTORY.md and build my vault from my last 30 days - projects, KBs, arcs,
 #    decisions, people, memory. Show me what you reconstructed."
 ```
 
 It clusters sessions **and** chats into real projects, deep-reads the high-signal ones
-(`read-session.sh` / `read-chat.sh` strip the noise to plain prose), and **builds**
+(`read-session.sh` / `read-chat.sh` / `read-codex-session.sh` strip the noise to plain prose), and **builds**
 `Notes/<project>/` (README, PROJECT_LOG, PROJECT_ARC, KNOWLEDGE_BASE) + `decisions/` ADRs +
 People/Glossary + memory + Open Items — then proves it with live `/recall`. Full playbook:
 **`ADOPT_FROM_HISTORY.md`**.
@@ -72,6 +86,11 @@ existing vault** — if one is already there, the scaffold is skipped and only t
 ## What's here
 
 ```
+AGENTS.md                    Codex operating contract for this repo
+SETUP_FOR_CODEX.md           Codex setup and verification runbook
+CLAUDE.md                    Claude Code operating contract for this repo
+codex/                       Codex hook manifest, scripts, and config example
+install-codex.sh             Codex hook installer (does not touch Claude setup)
 claude/                       the GLOBAL half → ~/.claude
   settings.json                 hooks, MCP servers, permissions
   scripts/warm-start.sh         SessionStart context injection
@@ -92,9 +111,27 @@ catalog-sessions.sh           map your last N days of Claude Code sessions (titl
 read-session.sh               print one Claude Code session's conversation, tool-noise stripped
 catalog-chats.sh              map your claude.ai/desktop chats from a data export (conversations.json)
 read-chat.sh                  print one claude.ai chat's conversation
-ADOPT_FROM_HISTORY.md         playbook: build a populated vault from Claude Code sessions AND chats
+catalog-codex-sessions.sh     map your last N days of Codex sessions (titles + goals)
+read-codex-session.sh         print one Codex session's conversation, tool-noise stripped
+ADOPT_FROM_HISTORY.md         playbook: build a populated vault from Claude Code, Claude chats, and Codex
 SECRETS.example.md            what to copy in by hand (never committed)
 ```
+
+### Codex
+
+- **Operating contract:** Codex reads root `AGENTS.md`. Keep it alongside `CLAUDE.md`; this is not
+  a migration away from Claude Code.
+- **Setup:** follow `SETUP_FOR_CODEX.md` and `./install-codex.sh` to link/copy Codex-side assets,
+  verify `codex_hooks`, verify QMD, and prove Codex session export into `~/vault/sessions`.
+- **Shared history:** `~/vault/sessions` is the common markdown archive. Older Claude exports and
+  new Codex exports should both land there, then QMD indexes the archive for recall.
+- **Native Codex history:** `catalog-codex-sessions.sh` and `read-codex-session.sh` read
+  `~/.codex/sessions` directly for backfill and troubleshooting without touching Claude files.
+- **Memory writes:** Codex semantic memory sync is opt-in via `CODEX_HARNESS_MEMORY_SYNC=1`; session
+  markdown export is the default finalization behavior.
+- **Workspace convention:** durable project repos should remain under
+  `/Users/tarang/Documents/Projects`; Codex resume starts with project `AGENTS.md` and
+  `System/handoffs/RESUME.md`.
 
 ### Skills
 - **Global** (`claude/skills/` → `~/.claude/skills/`): the workflow-engine family

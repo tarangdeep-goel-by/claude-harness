@@ -1,19 +1,15 @@
-# ADOPT_FROM_HISTORY — turn your last 30 days of Claude Code into a populated vault
+# ADOPT_FROM_HISTORY — turn your last 30 days of agent history into a populated vault
 
-**For: anyone moving to this harness with existing Claude history** — whether you've used **Claude
-Code** OR (more likely) the **Claude desktop app / claude.ai chats** (the people we most want to move
-to Claude Code). You just did the install + setup (real onboarding effort). This is the payoff:
-instead of an empty vault, your Claude mines your *own* history and reconstructs your recent work
-into a populated, `/recall`-able knowledge base — **so within one pass you see what the harness is
-worth.** This is the inverse of starting blank.
+**For: anyone moving to this harness with existing Claude or Codex history.** You just did the
+install + setup. This is the payoff: instead of an empty vault, the agent mines your *own* history
+and reconstructs your recent work into a populated, `/recall`-able knowledge base.
 
-**Kick it off — paste this to your Claude (in the seeded vault):**
-> "Read `ADOPT_FROM_HISTORY.md` and build my vault from my last 30 days of Claude Code history —
+**Kick it off — paste this to your agent (in the seeded vault):**
+> "Read `ADOPT_FROM_HISTORY.md` and build my vault from my last 30 days of Claude and Codex history -
 > projects, KBs, arcs, decisions, people, memory. Show me what you reconstructed."
 
-You (Claude) then run the procedure below. **Goal = a fast, visible win:** real project knowledge
-bases that read like they'd been kept all along, demonstrated with live `/recall`. Be ambitious and
-thorough — this is the moment that justifies the onboarding.
+Run the procedure below. Goal: real project knowledge bases that read like they had been kept all
+along, demonstrated with live `/recall`.
 
 ---
 
@@ -22,7 +18,7 @@ thorough — this is the moment that justifies the onboarding.
   defines the target structure (`Notes/<project>/`, ADRs, KB contract) and the conventions you must
   follow. `qmd` installed (for the final index + the win demo).
 
-### Sources — two kinds of history (use whichever you have; ideally both)
+### Sources — three kinds of history (use whichever you have)
 - **A · Claude Code** (local, no setup): transcripts in `~/.claude/projects/<dir>/*.jsonl`.
   Tools: `./catalog-sessions.sh 30` (the map) + `./read-session.sh <id>` (one session, tool-noise stripped).
 - **B · Claude desktop app / claude.ai chats** (server-side — this is most people): there's no local
@@ -31,11 +27,16 @@ thorough — this is the moment that justifies the onboarding.
   all write to the same account, so this one export covers them all.
   Tools: `./catalog-chats.sh conversations.json 30` + `./read-chat.sh conversations.json <id|name>`.
   (Anything not in the account export can't be mined locally — note that gap if it matters.)
+- **C · Codex** (local, Codex-native): transcripts in `~/.codex/sessions/*/*/*/*.jsonl`.
+  Tools: `./catalog-codex-sessions.sh 30` (the map) + `./read-codex-session.sh <id>` (one session,
+  tool-noise stripped). Stop/finalize hooks export selected Codex sessions into `~/vault/sessions`
+  with `source: codex`, so QMD can search them beside Claude sessions.
 
 ## Phase 1 — Map your history (fast)
 1. Build the map from whatever you have:
    - Claude Code → `./catalog-sessions.sh 30` → `session-catalog.md`
    - claude.ai/desktop export → `./catalog-chats.sh conversations.json 30` → `chat-catalog.md`
+   - Codex → `./catalog-codex-sessions.sh 30` → `codex-session-catalog.md`
    Each lists every recent item with its **title** and **opening message** — your triage map.
    **Sanity-check the counts.** If the chat catalog says "0 conversations," your export is older than
    the window (exports lag hours–days) — widen it: `./catalog-chats.sh conversations.json 365`.
@@ -48,8 +49,10 @@ thorough — this is the moment that justifies the onboarding.
 
 ## Phase 2 — Deep-read the high-signal sessions
 For each project, pick its **richest 3–8 items** (longest / most-decisive by title) and read them in
-full — `./read-session.sh <id>` for Claude Code sessions, `./read-chat.sh conversations.json <id|name>`
-for claude.ai chats (both strip the noise to plain human/Claude prose). Extract: what the project
+full — `./read-session.sh <id>` for Claude Code sessions,
+`./read-chat.sh conversations.json <id|name>` for claude.ai chats, and
+`./read-codex-session.sh <id>` for Codex sessions. All three strip tool noise to plain user/agent
+prose. Extract: what the project
 *is*, what was decided and why, what shipped, what's still open, and recurring **people / metrics /
 products / tools**. Skim the rest by title. Don't read everything end-to-end — sample the signal.
 Note the session/chat id behind each fact (you'll cite it).
@@ -90,8 +93,9 @@ connected graph.
 ## Phase 5 — Memory & open items
 - **`Meta/memory.md`** — infer and write who you are, your team, your scope, and recurring
   preferences/working-style that show up across sessions. (This is the auto version of `/onboard`.)
-- A few `~/.claude/projects/<vault-slug>/memory/*.md` files for durable facts/feedback that recur
-  (one fact per file, with the frontmatter format) + update `MEMORY.md`.
+- A few native memory files for durable facts/feedback that recur:
+  `~/.claude/projects/<vault-slug>/memory/*.md` for Claude Code and `~/.codex/memories/*.md` for
+  Codex. One fact per file, with frontmatter where that runtime supports it, plus update `MEMORY.md`.
 - **`System/dashboards/Open Items.md`** — unfinished threads / TODOs / "next: …" surfaced across the
   recent sessions, so day 1 already has your real backlog.
 

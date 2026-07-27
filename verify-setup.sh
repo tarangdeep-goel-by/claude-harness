@@ -66,6 +66,10 @@ else
 fi
 command -v gh >/dev/null && ok "gh" || warn "gh missing (/dev-task needs it)"
 
+hdr "codex (optional):"
+[ -e "$HOME/.codex/hooks.json" ] && ok "Codex hooks.json present" || warn "~/.codex/hooks.json missing — run ./install-codex.sh if you use Codex"
+[ -e "$HOME/.codex/scripts/codex_hook_adapter.py" ] && ok "Codex hook adapter present" || warn "~/.codex/scripts/codex_hook_adapter.py missing — run ./install-codex.sh if you use Codex"
+
 hdr "vault + knowledge:"
 [ -d "$VAULT_DST" ] && ok "vault at $VAULT_DST" || warn "no vault at $VAULT_DST — run ./install.sh"
 if [ -f "$VAULT_DST/Meta/memory.md" ]; then
@@ -77,7 +81,7 @@ else
 fi
 
 hdr "data layer:"
-[ -f "$HOME/code/.env" ] && ok "~/code/.env present" || warn "~/code/.env missing — add your data-stack credentials here (see SECRETS.md)"
+[ -f "$HOME/code/.env" ] && ok "~/code/.env present" || warn "~/code/.env missing — add your data-stack credentials here (see SECRETS.example.md)"
 # Add your own data library check here, e.g.:
 # [ -d "$HOME/code/my-analytics/.venv" ] && ok "analytics venv" || warn "analytics venv missing"
 
