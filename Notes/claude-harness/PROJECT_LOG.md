@@ -51,3 +51,9 @@
 - bge-m3 embed running (~midday ETA), monitoring cron armed.
 - Telemetry: skill-retrieval fix verified; memory-infer down (GLM z.ai out of credits — recharge); recall SKILL.md triggers strengthened.
 - [[handoff: System/handoffs/2026-07-27/887fe5e4-777e-4909-8cda-8f3e7456ccee.md]]
+
+## 2026-07-27 · 887fe5e4 · dev · bge-m3 embed COMPLETE + articles purged
+- bge-m3 embed finished: 75,380 vectors / 2,742 docs / 0 pending. Retrieval verified (qmd query → known session @ 93%). ~2-4% chunks failed (edge-case model errors); ~96%+ coverage.
+- articles collection purged via `qmd collection remove articles` (user decision): 1805 docs / 4.4 GB of newsletter scrapes removed — not needed for /recall, was the embed long-tail. DB 1.2 GB → 487 MB.
+- Qwen3 model deleted (610 MB reclaimed); sentinel removed (skill-retrieval hook re-enabled); monitoring cron deleted.
+- [[handoff: System/handoffs/2026-07-27/887fe5e4-777e-4909-8cda-8f3e7456ccee.md]]
