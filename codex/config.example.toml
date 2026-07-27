@@ -5,6 +5,10 @@ model = "gpt-5"
 model_reasoning_effort = "high"
 personality = "pragmatic"
 
+# Keep outbound network available for command-line tools in workspace-write mode.
+[sandbox_workspace_write]
+network_access = true
+
 [features]
 codex_hooks = true
 memories = true
