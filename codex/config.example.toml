@@ -13,6 +13,12 @@ network_access = true
 codex_hooks = true
 memories = true
 
+[shell_environment_policy.set]
+# Explicit opt-in: when set to "1", Codex Stop/finalize can send session
+# transcript summaries to the configured Gemini API for semantic memory sync.
+# It can also update ~/.codex/memories plus ~/vault daily/completed notes.
+# CODEX_HARNESS_MEMORY_SYNC = "1"
+
 [mcp_servers.tmux]
 command = "npx"
 args = [

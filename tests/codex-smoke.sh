@@ -179,6 +179,17 @@ chk "exported fixture includes transcript text" $?
 ! grep -Eq "recommended_plugins|AGENTS.md instructions|environment_context|external_agent_tool_call" "$exported" 2>/dev/null
 chk "exported fixture excludes injected/tool context" $?
 
+precompact_payload='{"session_id":"'"$fixture_id"'","session_path":"'"$fixture_path"'","cwd":"'"$REPO"'"}'
+printf '%s' "$precompact_payload" | HOME="$install_home" "$install_home/.codex/scripts/codex_hook_adapter.py" PreCompact >/dev/null 2>&1
+chk "PreCompact adapter exits cleanly" $?
+snapshot="$(find "$install_home/vault/sessions" -type f -name '*_precompact_019fixtu_*.md' -print 2>/dev/null | head -1)"
+[ -n "$snapshot" ] && grep -q "type: precompact-state" "$snapshot" 2>/dev/null
+chk "PreCompact writes deterministic state snapshot" $?
+grep -q "Port the harness to Codex" "$snapshot" 2>/dev/null
+chk "PreCompact snapshot includes active user prompt" $?
+grep -q "Full transcript:" "$snapshot" 2>/dev/null
+chk "PreCompact snapshot links transcript export" $?
+
 ! grep -Eq 'GEMINI_API_KEY[[:space:]]*=[[:space:]]*"AIza' "$REPO/codex/config.example.toml" 2>/dev/null
 chk "config example contains no obvious Gemini API key literal" $?
 

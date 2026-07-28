@@ -291,8 +291,8 @@ def session_start(data: dict[str, Any]) -> int:
         )
     except json.JSONDecodeError:
         pass
-    run_observe("session-start", "persist-env", run_script(VAULT_SCRIPTS / "persist-env-hook.sh", warm_payload, timeout=3), payload)
-    run_observe("session-start", "memory-staleness", run_script(VAULT_SCRIPTS / "memory-staleness-check.sh", warm_payload, timeout=3), payload)
+    run_observe("session-start", "persist-env", run_script(VAULT_SCRIPTS / "persist-env-hook.sh", warm_payload, timeout=5), payload)
+    run_observe("session-start", "memory-staleness", run_script(VAULT_SCRIPTS / "memory-staleness-check.sh", warm_payload, timeout=5), payload)
     context = word_cap(str(context), MAX_SESSION_WORDS, MAX_SESSION_WORDS_ABSOLUTE)
     log_hook("session-start", "ok", f"{len(context.split())} words", payload)
     return emit({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": context}})
@@ -303,7 +303,7 @@ def user_prompt_submit(data: dict[str, Any]) -> int:
     prompt = payload.get("prompt", "")
     if not prompt or str(prompt).startswith("/"):
         return 0
-    proc = run_script(VAULT_SCRIPTS / "skill-retrieval-hook.sh", payload, timeout=3)
+    proc = run_script(VAULT_SCRIPTS / "skill-retrieval-hook.sh", payload, timeout=8)
     if proc is None or not proc.stdout.strip():
         return 0
     try:
@@ -447,12 +447,149 @@ def latest_session() -> str:
     return str(paths[0]) if paths else ""
 
 
+def text_from_content(content: Any) -> str:
+    if isinstance(content, str):
+        return content.strip()
+    if not isinstance(content, list):
+        return ""
+    parts = []
+    for block in content:
+        if isinstance(block, dict) and block.get("type") in {"input_text", "output_text", "text"}:
+            text = str(block.get("text") or "").strip()
+            if text:
+                parts.append(text)
+    return "\n\n".join(parts).strip()
+
+
+def snapshot_noise(text: str) -> bool:
+    markers = (
+        "This session is being continued",
+        "Base directory for this skill",
+        "<recommended_plugins>",
+        "# AGENTS.md instructions",
+        "<environment_context>",
+        "<permissions instructions>",
+        "tool_result",
+        "[external_agent_tool_call",
+        "[external_agent_tool_result",
+    )
+    return not text or text.startswith("<") or any(marker in text for marker in markers)
+
+
+def short_line(text: str, limit: int = 200) -> str:
+    text = " ".join(text.split())
+    return text[:limit] + ("..." if len(text) > limit else "")
+
+
+def git_output(cwd: str, args: list[str]) -> str:
+    if not cwd:
+        return ""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", cwd, *args],
+            text=True,
+            capture_output=True,
+            timeout=3,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
+def parse_session_state(session_path: Path) -> tuple[str, str, list[str]]:
+    session_id = session_path.stem
+    cwd = ""
+    prompts: list[str] = []
+    try:
+        with session_path.open() as handle:
+            for line in handle:
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
+                if row.get("type") == "session_meta":
+                    session_id = str(payload.get("id") or session_id)
+                    cwd = str(payload.get("cwd") or cwd)
+                    continue
+                if row.get("type") != "response_item" or payload.get("type") != "message":
+                    continue
+                if payload.get("role") != "user":
+                    continue
+                text = text_from_content(payload.get("content", []))
+                if not snapshot_noise(text):
+                    prompts.append(text)
+    except OSError:
+        pass
+    return session_id, cwd, prompts[-3:]
+
+
+def write_precompact_snapshot(session_path: str, payload: dict[str, Any], transcript_path: str) -> str:
+    source = Path(session_path)
+    parsed_session_id, parsed_cwd, prompts = parse_session_state(source)
+    session_id = str(payload.get("session_id") or parsed_session_id or source.stem)
+    cwd = str(payload.get("cwd") or parsed_cwd or os.getcwd())
+    project = Path(cwd).name or "unknown"
+    branch = git_output(cwd, ["rev-parse", "--abbrev-ref", "HEAD"])
+    last_commit = git_output(cwd, ["log", "-1", "--oneline"])
+    status = [line for line in git_output(cwd, ["status", "--short"]).splitlines() if line.strip()][:15]
+    compacted_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    date = time.strftime("%Y-%m-%d")
+    hhmmss = time.strftime("%H%M%S")
+    sid8 = (session_id or "unknown")[:8]
+
+    lines = [
+        "---",
+        f"session_id: {session_id}",
+        f"compacted_at: {compacted_at}",
+        f"project: {project}",
+        f'cwd: "{cwd.replace(chr(34), chr(39))}"',
+    ]
+    if branch:
+        lines.append(f"branch: {branch}")
+    if last_commit:
+        lines.append(f'last_commit: "{last_commit.replace(chr(34), chr(39))}"')
+    if transcript_path:
+        lines.append(f'transcript: "{transcript_path.replace(chr(34), chr(39))}"')
+    lines.extend(["source: codex", "type: precompact-state", "---", "", f"# Pre-compact state snapshot - {project}", ""])
+    lines.extend([
+        "Auto-written by the Codex PreCompact hook (deterministic; no model call).",
+        "Captures the environment state the transcript export omits: git working tree and active goal.",
+        "",
+        "## Active goal (recent user prompts)",
+    ])
+    if prompts:
+        lines.extend(f"- {short_line(prompt)}" for prompt in prompts)
+    else:
+        lines.append("- (no user prompts recovered)")
+    lines.extend(["", "## Git state"])
+    if branch:
+        lines.append(f"- branch: `{branch}`")
+        lines.append(f"- last commit: {last_commit}")
+        if status:
+            lines.append("- working tree:")
+            lines.extend(f"  - `{item}`" for item in status)
+        else:
+            lines.append("- working tree: clean")
+    else:
+        lines.append("- (not a git repo or git unavailable)")
+    lines.extend(["", "## Resume", f"- Full transcript: {transcript_path or '(not exported)'}", f"- cwd: `{cwd}`", ""])
+
+    target_dir = HOME / "vault" / "sessions"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target = target_dir / f"{date}_precompact_{sid8}_{hhmmss}.md"
+    target.write_text("\n".join(lines))
+    return str(target)
+
+
 def pre_compact(data: dict[str, Any]) -> int:
     payload = normalize_payload(data)
     session_path = str(payload.get("transcript_path") or payload.get("session_path") or payload.get("sessionPath") or latest_session())
     if not session_path or not Path(session_path).exists():
         log_hook("pre-compact", "skip", "no session file", payload)
         return 0
+    transcript_path = ""
     if EXPORT_SCRIPT.exists():
         try:
             proc = subprocess.run(
@@ -463,11 +600,17 @@ def pre_compact(data: dict[str, Any]) -> int:
                 check=False,
             )
             if proc.returncode == 0:
+                transcript_path = proc.stdout.strip().splitlines()[-1] if proc.stdout.strip() else ""
                 log_hook("pre-compact", "ok", Path(session_path).name, payload)
             else:
                 log_hook("pre-compact", "warn", proc.stderr.strip(), payload)
         except (OSError, subprocess.TimeoutExpired) as exc:
             log_hook("pre-compact", "warn", repr(exc), payload)
+    try:
+        snapshot_path = write_precompact_snapshot(session_path, payload, transcript_path)
+        log_hook("pre-compact", "ok", f"state-snapshot {Path(snapshot_path).name}", payload)
+    except Exception as exc:
+        log_hook("pre-compact", "warn", f"state snapshot failed: {exc!r}", payload)
     if QMD_REFRESH.exists():
         try:
             subprocess.Popen(
@@ -484,7 +627,7 @@ def pre_compact(data: dict[str, Any]) -> int:
 
 def subagent_start(data: dict[str, Any]) -> int:
     payload = normalize_payload(data)
-    proc = run_script(VAULT_SCRIPTS / "subagent-context-hook.sh", payload, timeout=3)
+    proc = run_script(VAULT_SCRIPTS / "subagent-context-hook.sh", payload, timeout=5)
     if proc is None or not proc.stdout.strip():
         log_hook("subagent-start", "skip", "subagent context missing", payload)
         return 0

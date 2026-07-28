@@ -18,7 +18,7 @@
           {
             "type": "command",
             "command": "python3 ~/.codex/scripts/codex_hook_adapter.py UserPromptSubmit",
-            "timeout": 3
+            "timeout": 10
           }
         ]
       }
@@ -76,7 +76,7 @@
           {
             "type": "command",
             "command": "python3 ~/.codex/scripts/codex_hook_adapter.py PreCompact",
-            "timeout": 10
+            "timeout": 20
           }
         ]
       }
@@ -87,7 +87,7 @@
           {
             "type": "command",
             "command": "python3 ~/.codex/scripts/codex_hook_adapter.py SubagentStart",
-            "timeout": 3
+            "timeout": 5
           }
         ]
       }
