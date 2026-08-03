@@ -52,6 +52,27 @@ This is how a **work session starts**: catch me up on where a thread was left. T
   `System/handoffs/**/*.md` (or that day's `_day.md` rollup) + the latest PROJECT_LOG entry per
   recently-touched project.
 
+**Non-repo fallback — applies to BOTH flavors (load-bearing for homelab/infra/DevOps work):**
+Every Mode 0 source above lives under `$PROJECT_DIR` (`git rev-parse --show-toplevel`). When the
+cwd **isn't a git repo** (e.g. `~/Documents/Projects` itself) or the in-repo handoff sources are
+absent, the primary path is empty and recall must **NOT** degrade to the raw transcript.
+
+**Central-vault first (when `$VAULT_DIR` is set — the default on this machine):** read
+`$VAULT_DIR/System/handoffs/RESUME.md` (the board — surface the `<project>` section, or
+`last_touched` for "where were we") + `$VAULT_DIR/Notes/<project>/PROJECT_LOG.md`. This is the
+primary resume surface; the daily-journal fallback below applies only when no central vault exists.
+Then read the **vault daily journal** as the structured handoff for non-repo work:
+1. Glob `~/vault/daily/*.md` **newest-first**; read the 2–3 most recent files.
+2. Grep for the project/topic (the `## Session — <time> · <sid> · <topic>` headings, or the
+   `projects: [<topic>]` frontmatter list) to find the matching resume point.
+3. Use that entry's `What was worked on` / `Key decisions` / `Open threads` as the resume point —
+   it is the same structured handoff `/vault-push` writes for non-repo sessions.
+Only if the daily journal has **no matching entry** should recall touch `~/vault/sessions/` (the
+raw transcript). The SessionStart hint names the transcript file — do **NOT** follow it blindly;
+check the daily handoff first. (Optional qmd boost if available: `qmd query "<topic>" -c daily`
+— but prefer the direct glob+grep, since the daily collection name varies by machine
+[`daily`↔`work-daily`] and an unknown `-c` silently drops the source.)
+
 **Both handoff shapes — the reader must handle either:**
 - **Legacy flat:** `System/handoffs/<date>.md` (one file per day, older vault layout).
 - **Current per-session:** `System/handoffs/<date>/<sid>.md` (one handoff per session) plus the

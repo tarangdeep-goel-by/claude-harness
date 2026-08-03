@@ -407,6 +407,9 @@ gather_resume() {
   # Skip on compact (context already present); show on startup/clear/resume.
   if [ "$SESSION_SOURCE" = "compact" ]; then return 0; fi
   local rf="$PROJECT_DIR/System/handoffs/RESUME.md"
+  # Central-vault fallback: if the cwd isn't a vault, use $VAULT_DIR (set per-machine in settings
+  # env). Backward-compatible — unset VAULT_DIR (e.g. a repo that IS its own vault) keeps cwd behavior.
+  [ -f "$rf" ] || rf="${VAULT_DIR:-$PROJECT_DIR}/System/handoffs/RESUME.md"
   # `return 0`, not bare `return` — a bare return leaks the failing `[ -f ]` status
   # (1) as the function's exit, tripping the ERR trap at the call site on every
   # non-vault session (the misleading "FATAL ... line 559" in warm-start-errors.log).
@@ -541,7 +544,7 @@ gather_kb_freshness() {
   local vault="$PROJECT_DIR"
   local today; today=$(date +%F)
   [ -f "$vault/System/handoffs/$today/_day-started.json" ] && return
-  [ -f "$vault/System/scripts/discrepancy-scan.py" ] || return
+  [ -f "$vault/System/scripts/discrepancy-scan.py" ] || return 0
   local out
   out=$(timed python3 "$vault/System/scripts/discrepancy-scan.py" --freshness-only)
   if [ -n "$out" ] && printf '%s' "$out" | grep -q '⚠'; then

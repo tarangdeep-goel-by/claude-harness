@@ -38,6 +38,14 @@ use the `manual-…` fallback instead of a wrong live SID.
   doesn't exist yet, `mkdir -p` it. Treat `<repo-name>` as `<project>` everywhere below.
 - **Default mode** — anywhere else (no git repo).
 
+**Central-vault override (when `$VAULT_DIR` is set — the default on this machine):** the WRITE
+target for all vault artifacts below is `$VAULT_DIR`, not `$PROJECT_DIR`. Set
+`VAULT="${VAULT_DIR:-$PROJECT_DIR}"` and write handoffs / PROJECT_LOG / README / ARC / board to
+`$VAULT/...`. `<project>`/`<repo-name>` stays the actual cwd repo's basename (so a swing-lab
+session updates `$VAULT/Notes/swing-lab/` + the `## swing-lab` board section). Invoke the board
+writer as `python3 "$VAULT_DIR/tools/resume_board.py" update ...` (it defaults to `$VAULT_DIR`'s
+RESUME.md). If `$VAULT_DIR` is unset (a repo that IS its own vault, e.g. work), behavior is unchanged.
+
 ---
 
 ## Mode 1: Project persistence
