@@ -1,208 +1,249 @@
 # claude-harness
 
-A complete, shareable Claude Code + Codex working environment — hooks, skills,
-session-continuity scripts, settings, Codex operating docs, **and** a ready-to-fill PM
-knowledge-vault scaffold. Clone + setup gives a fresh machine the whole inter-platform harness:
-the engine *and* an empty vault to put your own knowledge into.
+A local operating system for long-running work with Claude Code and Codex.
 
-> Self-contained: the global engine (hooks + skills) **and** the project vault scaffold
-> (`vault-template/`) ship in one repo — `clone + ./install.sh` stands up the full system.
+The repository combines lifecycle hooks, reusable skills, session export, local search, and a
+starter Obsidian vault. Its main job is continuity: an agent starts with the project's current
+state, follows the same safety and verification rules while it works, and leaves behind useful
+context for the next session.
 
-Claude Code remains supported by `CLAUDE.md`, `claude/**`, and the existing Claude hooks/skills.
-Codex support is additive: Codex reads `AGENTS.md`, uses Codex-side setup from
-`SETUP_FOR_CODEX.md`, and shares the same `~/vault/sessions` history archive for recall.
-Claude Code, Claude export, and Codex sessions stay in their native caches, then export into the
-shared archive with source frontmatter.
+The harness is deliberately local-first. Session archives, search indexes, knowledge notes, and
+telemetry stay on the machine unless you configure an external integration yourself.
 
-## New machine / new teammate
+## Why this exists
 
-> **Prefer to have Claude drive it?** After `install.sh`, open Claude Code and paste: *"Read
-> `SETUP_FOR_CLAUDE.md` and get my machine fully set up — walk me through each step and verify it."*
-> It's the ordered, self-verifying runbook (bootstrap → secrets → telemetry → verify → onboard →
-> history back-fill). The manual steps below are the same thing by hand.
+AI coding sessions are useful, but they are oddly forgetful. A new session can lose the reason behind an architectural choice, repeat an investigation that already happened, or declare a task finished without the check that mattered. Good working habits often end up trapped in one long chat or in one developer's machine setup.
 
-> **Prefer to have Codex drive it?** Open Codex in this repo and paste: *"Read
-> `SETUP_FOR_CODEX.md` and get Codex using this harness — walk me through each step and verify it."*
-> Codex setup is an inter-platform add-on; it does not remove or replace the Claude Code path.
+This harness began as a way to make those habits durable. It turns decisions, handoffs, safety rules, and verification steps into local files and repeatable lifecycle hooks instead of relying on the model to remember them. The goal is not to add ceremony to every edit. It is to let a developer leave a project, come back later (or switch between Claude Code and Codex), and resume with the important context intact.
+
+It also makes the setup portable. A fresh machine should be able to inherit the same guardrails and continuity system without inheriting somebody else's private notes or credentials.
+
+## What it provides
+
+- A shared development workflow for planning, worktree isolation, debugging, review, and
+  evidence-based completion.
+- Claude Code hooks for warm starts, file and command guards, post-edit checks, pre-compaction
+  capture, session export, and local telemetry.
+- A Codex adapter for the same lifecycle events, plus native Codex session catalog, export, and
+  pre-compaction state snapshots.
+- Seventeen global Claude skills, including `workflow-engine`, `recall`, `vault-push`,
+  `review-merge`, `infra-health`, `drawio`, and `humanizer`.
+- A ready-to-seed knowledge vault with project logs, ADRs, handoffs, daily notes, templates,
+  capture skills, and an Obsidian configuration.
+- QMD-backed hybrid retrieval over session transcripts, plans, daily notes, and project knowledge.
+- Import tools for local Claude Code sessions, Codex sessions, and Claude account exports.
+
+## How it fits together
+
+```mermaid
+flowchart LR
+    U[Developer] --> C[Claude Code]
+    U --> X[Codex]
+
+    C --> CH[Claude lifecycle hooks]
+    X --> CA[Codex hook adapter]
+    CH --> H[Shared hook scripts]
+    CA --> H
+
+    H --> S[Local session archive<br/>~/vault/sessions]
+    H --> T[Local telemetry<br/>~/vault/logs]
+    H --> W[Warm-start context]
+
+    S --> Q[QMD index]
+    K[Knowledge vault<br/>vault-work] --> Q
+    P[Plans and handoffs] --> Q
+    Q --> R[recall and skill retrieval]
+    R --> C
+    R --> X
+
+    C --> K
+    X --> K
+```
+
+There are two separate vaults:
+
+| Location | Purpose | Lifecycle |
+|---|---|---|
+| `~/vault/` | Machine-local runtime data: exported sessions, hook scripts, logs, and generated notes | Created and wired by the installer |
+| `~/Documents/vault-work/` by default | Curated, git-friendly knowledge: projects, decisions, dailies, people, and handoffs | Seeded once from `vault-template/`, then owned by you |
+
+## Repository layout
+
+| Path | Role |
+|---|---|
+| `claude/` | Claude Code settings, warm-start entry point, and global skills |
+| `codex/` | Codex hook manifest, adapter, exporters, doctor, and configuration example |
+| `vault-scripts/` | Shared safety, continuity, retrieval, telemetry, and verification hooks |
+| `vault-template/` | Empty knowledge-vault scaffold, capture skills, commands, templates, and setup scripts |
+| `install.sh` | Installs Claude/shared assets and seeds a new knowledge vault |
+| `install-codex.sh` | Adds Codex scripts and hooks without changing Claude settings |
+| `update.sh` | Pulls and reconciles an existing Claude/shared installation |
+| `verify-setup.sh` | Read-only health report for links, dependencies, QMD, Codex, and vault state |
+| `catalog-*.sh`, `read-*.sh` | Inspect prior Claude Code, Claude chat-export, and Codex history |
+| `tests/` | Clean-room installer and hook safety smoke tests |
+
+## Requirements
+
+The core scripts expect Bash, Git, `python3`, `jq`, and `rsync`. The setup is primarily designed
+for macOS, while the clean-room and hook suites also run on Ubuntu in CI.
+
+QMD is optional for installation but required for semantic recall and task-start skill retrieval.
+It needs Node.js 22+ or Bun; macOS also needs SQLite:
 
 ```bash
-git clone <this-repo> ~/code/claude-harness
-cd ~/code/claude-harness
-./install.sh                 # symlinks the engine into ~/.claude + ~/vault/scripts,
-                             #   AND seeds a vault from vault-template/ (only if none exists)
-./bootstrap.sh               # deps: jq, python3; checks qmd / gh
-bash ~/Documents/vault-work/System/scripts/setup-work-machine.sh   # qmd index, transcription models, launchd
-# copy secrets into ~/.claude + ~/code/.env  (see SECRETS.example.md)
-# connect account-level MCP (Slack/Linear/PostHog) in claude.ai, then restart Claude Code
-./verify-setup.sh            # run LAST (after setup-work-machine builds the qmd index); flags silent gaps
-# open ~/Documents/vault-work in Obsidian → /onboard (fill Meta/memory.md) → /start-work
+brew install sqlite
+npm install -g @tobilu/qmd
 ```
 
-Steps are ordered: `install` wires the engine + seeds the vault; `bootstrap` installs deps;
-`setup-work-machine.sh` builds the qmd index + transcription models + the daily-sync launchd agent;
-then secrets + MCP; `verify-setup.sh` last (so its qmd-index check passes). Full external-tool
-detail (MCP, VPN) lives in the seeded
-`vault-template/System/docs/WORK_MACHINE_SETUP.md`.
+The first embedding run downloads local models and can use roughly 2 GB of cache space. GitHub CLI
+is optional and used by GitHub-oriented workflows. Audio capture and transcription have additional
+macOS dependencies documented in `vault-template/System/docs/WORK_MACHINE_SETUP.md`.
 
-> **qmd is required for `/recall` and warm-start context.** Install it (source: `github.com/tobi/qmd`):
-> `npm install -g @tobilu/qmd` (or `bun install -g @tobilu/qmd`). Needs Node ≥22 or Bun; on macOS
-> also `brew install sqlite`. First use auto-downloads ~2 GB of on-device models to `~/.cache/qmd`.
-> Then `qmd update && qmd embed` to build the index. Without qmd, `/recall` and warm-start degrade
-> gracefully — they no-op rather than crash, but vault search is disabled.
-
-## Already have Claude history? Back-fill from it (the fast win)
-
-Coming from the **Claude desktop app / claude.ai chats** (most people) or from **Claude Code**? Don't
-start empty — mine your own history into a populated vault so the onboarding pays off immediately:
+## Install for Claude Code
 
 ```bash
-# A) Claude Code (local):
-./catalog-sessions.sh 30                       # map recent sessions: title + opening goal
+git clone https://github.com/tarangdeep-goel-by/claude-harness.git
+cd claude-harness
 
-# B) Claude desktop app / claude.ai (server-side → get the data export):
-#    claude.ai → Settings → Privacy → Export data → email zip → unzip → conversations.json
-./catalog-chats.sh conversations.json 30       # map recent chats the same way
+# Inspect missing dependencies without installing anything.
+./bootstrap.sh --check
 
-# C) Codex (local):
-./catalog-codex-sessions.sh 30                 # map recent Codex sessions from ~/.codex/sessions
+# Install the shared engine and seed the default knowledge vault if it is empty.
+./install.sh
 
-# then, in the seeded vault, tell your agent:
-#   "Read ADOPT_FROM_HISTORY.md and build my vault from my last 30 days - projects, KBs, arcs,
-#    decisions, people, memory. Show me what you reconstructed."
+# Report remaining setup gaps.
+./verify-setup.sh
 ```
 
-It clusters sessions **and** chats into real projects, deep-reads the high-signal ones
-(`read-session.sh` / `read-chat.sh` / `read-codex-session.sh` strip the noise to plain prose), and **builds**
-`Notes/<project>/` (README, PROJECT_LOG, PROJECT_ARC, KNOWLEDGE_BASE) + `decisions/` ADRs +
-People/Glossary + memory + Open Items — then proves it with live `/recall`. Full playbook:
-**`ADOPT_FROM_HISTORY.md`**.
+To seed a different knowledge-vault location:
 
-In the seeded vault, open `CLAUDE.md` first — it carries an **adapt checklist** (set your product
-area, run `/onboard`, add your own data-stack skills).
-
-`install.sh --vault ~/Documents/<name>` seeds the vault somewhere else. **It never overwrites an
-existing vault** — if one is already there, the scaffold is skipped and only the engine is (re)linked.
-
-## What's here
-
-```
-AGENTS.md                    Codex operating contract for this repo
-SETUP_FOR_CODEX.md           Codex setup and verification runbook
-CLAUDE.md                    Claude Code operating contract for this repo
-codex/                       Codex hook manifest, scripts, and config example
-install-codex.sh             Codex hook installer (does not touch Claude setup)
-claude/                       the GLOBAL half → ~/.claude
-  settings.json                 hooks, MCP servers, permissions
-  scripts/warm-start.sh         SessionStart context injection
-  skills/<name>/                global skills (work types + continuity)
-vault-scripts/*.sh *.py       hooks + automation → ~/vault/scripts (Stop/PreCompact/SessionStart/…)
-vault-template/               the PROJECT half → seeded into a new vault by install.sh
-  CLAUDE.md                     operating manual (adapt the domain bits)
-  .claude/{skills,agents,commands}   capture skills + librarian + slash commands
-  System/{templates,scripts,docs}    doc templates, generic infra scripts, architecture docs
-  System/{dashboards,daily-jobs.yaml,handoffs}   empty ledgers + example jobs
-  Categories/ Subjects/         cross-cutting Bases view definitions
-  Daily/ Notes/ People/ Glossary/ Meta/   empty taxonomy + READMEs (no knowledge)
-install.sh                    symlink deployer + vault seeder (idempotent)
-bootstrap.sh                  dependency installer
-verify-setup.sh               post-install health check (symlinks/deps/qmd/vault/creds)
-make-vault-template.sh        regenerate vault-template/ from a live vault (knowledge-stripped)
-catalog-sessions.sh           map your last N days of Claude Code sessions (titles + goals)
-read-session.sh               print one Claude Code session's conversation, tool-noise stripped
-catalog-chats.sh              map your claude.ai/desktop chats from a data export (conversations.json)
-read-chat.sh                  print one claude.ai chat's conversation
-catalog-codex-sessions.sh     map your last N days of Codex sessions (titles + goals)
-read-codex-session.sh         print one Codex session's conversation, tool-noise stripped
-ADOPT_FROM_HISTORY.md         playbook: build a populated vault from Claude Code, Claude chats, and Codex
-SECRETS.example.md            what to copy in by hand (never committed)
+```bash
+./install.sh --vault "$HOME/Documents/my-vault"
+./verify-setup.sh --vault "$HOME/Documents/my-vault"
 ```
 
-### Codex
+`install.sh` is idempotent, but it is not a passive copy command:
 
-- **Operating contract:** Codex reads root `AGENTS.md`. Keep it alongside `CLAUDE.md`; this is not
-  a migration away from Claude Code.
-- **Setup:** follow `SETUP_FOR_CODEX.md` and `./install-codex.sh` to link/copy Codex-side assets,
-  verify `codex_hooks`, verify QMD, and prove Codex session export into `~/vault/sessions`.
-- **Shared history:** `~/vault/sessions` is the common markdown archive. Older Claude exports and
-  new Codex exports should both land there, then QMD indexes the archive for recall.
-- **Native Codex history:** `catalog-codex-sessions.sh` and `read-codex-session.sh` read
-  `~/.codex/sessions` directly for backfill and troubleshooting without touching Claude files.
-- **Memory writes:** Codex semantic memory sync is opt-in via `CODEX_HARNESS_MEMORY_SYNC=1`; session
-  markdown export is the default finalization behavior.
-- **Workspace convention:** durable project repos should remain under
-  `/Users/tarang/Documents/Projects`; Codex resume starts with project `AGENTS.md` and
-  `System/handoffs/RESUME.md`.
+- It copies the adopter settings to `~/.claude/settings.json` when needed. If an existing settings
+  file does not contain harness hooks, the installer backs it up and moves non-hook fields to
+  `settings.local.json` when `jq` is available and no local override already exists.
+- It replaces conflicting skill and hook-script targets with symlinks into this repository.
+- It seeds `vault-template/` only when the chosen knowledge-vault directory is empty. It does not
+  merge the template into an existing vault.
 
-### Skills
-- **Global** (`claude/skills/` → `~/.claude/skills/`): the workflow-engine family
-  (`workflow-engine`, `task-triage`, `karpathy-guidelines`, `debug-escalation`, `done-gate`,
-  `review-merge`) + `recall`, `vault-push` (session bookends) + `memory`, `reflect`, `stats`,
-  `vault-audit`, `infra-health`, `find-skills`, `drawio`, `humanizer`, `warm`. 17 skills, all
-  symlinked from this repo (drift-free).
-- **Vault** (`vault-template/.claude/skills/` → seeded into the vault): `scribe`, `transcriber`,
-  `sorter`, `compiler`, `export` (capture). Agent: `librarian`. Plus the slash commands.
-- All shipped skills are **dev-focused and data-stack-agnostic**. Bring your own product/analytics
-  skills under your vault's `.claude/skills/` as needed.
-- **Skill retrieval at task-start** — a `UserPromptSubmit` hook (`skill-retrieval-hook.sh`) runs
-  QMD top-k over skill descriptions and surfaces matching skills as context, so the right skill
-  loads before answering (especially helps GLM, which under-triggers skills). Needs the `skills` qmd
-  collection (built by `install.sh` + refreshed by warm-start).
+Keep machine-specific Claude settings in `~/.claude/settings.local.json`. Maintainers who need the
+owner settings variant can use `HARNESS_OWNER=1 ./install.sh`.
 
-### Telemetry (local — nothing leaves your machine)
-Every hook logs to `~/vault/logs/hooks.jsonl`; **skill + subagent** invocations are captured by
-`tool-telemetry-hook.sh` → `~/vault/logs/workflow.jsonl`. The memory hooks (`memory-consulted`,
-`memory-validate`, `memory-staleness`, `memory-infer`) track memory quality. Session liveness →
-`active-sessions/`. Run **`/infra-health`** for the rollup (per-hook count/failure/p50–p95, skill
-frequency, job freshness, unpushed-session rate). **All telemetry stays local** — this harness ships
-no log-upload machinery. (`/stats` is separate — cost/token usage.)
+For the guided path, ask Claude Code to read [`SETUP_FOR_CLAUDE.md`](SETUP_FOR_CLAUDE.md). The
+machine setup script can also configure QMD, launchd jobs, and optional transcription tooling; read
+the runbook before running it because it installs packages and downloads models.
 
-### Hook scripts (`vault-scripts/`)
-- `session-marker-hook.sh` — live/parallel session heartbeats.
-- `warm-start.sh` (in `claude/scripts/`) — SessionStart project intelligence.
-- `session-export-hook.sh` / `precompact-hook.sh` — export transcripts → `~/vault/sessions` → qmd.
-- `auto-checkpoint-hook.sh` — git-stash safety net. `completion-check-hook.sh` — placeholder gate.
-- `learning-detector.py` — learnings extraction (feeds the `reflect` skill).
-- `file-guard-hook.sh`, `block-dangerous-hook.sh`, `allow-python-hook.sh` — safety/permission gates.
+## Add Codex support
 
-## Day-0 tools & access (beyond `install.sh`)
+Run the shared installer first, then install the Codex-specific layer:
 
-The harness wires the Claude infra + vault; **your data tools are set up separately.** A machine is
-only "at full level" once these are in place:
+```bash
+./install.sh
+./install-codex.sh
+python3 ~/.codex/scripts/codex_hooks_doctor.py
+```
 
-- **Your data library / venv** — whatever your analytics stack uses (a Python lib, dbt project,
-  BigQuery client, etc.). Wire it into `~/code/`.
-- **MCP connectors** (claude.ai account-level — must be **connected** in this client): Slack, Linear,
-  or other integrations. Add local stdio servers (e.g. `tmux`, `qmd`) to `settings.json` if you want them. ⚠ Connect, then **restart**.
-- **Creds / access** (`~/code/.env` + `~/.claude`, see `SECRETS.example.md`): your analytics API keys,
-  database credentials, and any API keys your data tools need.
+`install-codex.sh` links runtime scripts into `~/.codex/scripts`, renders `~/.codex/hooks.json`
+with absolute paths, and backs up conflicting Codex files. It intentionally does not overwrite
+`~/.codex/config.toml`. Merge only the settings you want from
+[`codex/config.example.toml`](codex/config.example.toml), including `features.codex_hooks = true`.
 
-Full detail: `vault-template/System/docs/WORK_MACHINE_SETUP.md`; the paradigm:
-`vault-template/System/docs/HOW_THIS_SYSTEM_WORKS.md`.
+Codex and Claude keep their native histories. Both export cleaned Markdown into
+`~/vault/sessions`, where QMD can search them together. Codex transcript export is enabled by the
+finalization path; semantic memory updates are separate and opt-in:
 
-## Maintaining the harness
+```toml
+[shell_environment_policy.set]
+CODEX_HARNESS_MEMORY_SYNC = "1"
+```
 
-- **Engine** (`claude/`, `vault-scripts/`): `install.sh` **symlinks** these, so editing a live file
-  edits the repo — single source of truth. Re-run anytime; idempotent.
-- **Vault scaffold** (`vault-template/`): NOT symlinked (a new vault gets its own copy). When you
-  evolve your skills/templates/`CLAUDE.md` in a real vault, run **`./make-vault-template.sh`** to
-  regenerate `vault-template/` (knowledge-stripped, by allowlist), then commit. That's how the
-  shareable harness stays current without leaking knowledge.
+That option sends selected session content to the Gemini API and can update Codex memory and local
+vault notes. Leave it unset if you want export without model-assisted memory writes. See
+[`SETUP_FOR_CODEX.md`](SETUP_FOR_CODEX.md) for the full setup and verification sequence.
 
-> ⚠ `settings.json` is **copied** (not symlinked) by `install.sh` — Claude Code owns that file. If a
-> tool overwrites it, re-run `./install.sh` to re-seed the harness hooks (your personal keys live in
-> `~/.claude/settings.local.json`, which updates never touch).
+## Daily workflow
 
-## Two vaults (don't conflate them)
-- **`~/Documents/vault-work/`** — the **knowledge vault** (Obsidian, git-tracked, your own repo).
-  Notes, projects, decisions, daily captures. Seeded from `vault-template/` on first install; then
-  it's yours.
-- **`~/vault/`** — the **harness runtime** (machine-local, never committed). Hook scripts (symlinks
-  to this repo), telemetry logs, raw session exports, the learnings queue. Created by `install.sh`.
-- Flow: raw machine output → `~/vault` → distilled by you → `~/Documents/vault-work`.
+At session start, the harness gathers repository state, recent handoffs, and QMD context. During a
+session, the operating contract routes work through task triage, worktrees, focused debugging, and
+fresh verification. Pre-compaction and stop hooks preserve transcripts; `vault-push` records the
+decisions and handoff material worth keeping.
 
-## Data (never committed)
-`~/vault/{sessions,daily,notes,logs}`, `~/.claude/{projects,history.jsonl,…}`, caches, and all
-secrets are machine-local. This repo carries only the reproducible harness + the empty scaffold.
+Useful commands:
+
+```bash
+# Search indexed knowledge directly.
+qmd query "why did we choose this architecture" -c sessions -c projects
+
+# Inspect recent native histories before importing them.
+./catalog-sessions.sh 30
+./catalog-codex-sessions.sh 30
+./catalog-chats.sh conversations.json 30
+
+# Read one selected history item without tool noise.
+./read-session.sh <session-id>
+./read-codex-session.sh <session-id>
+./read-chat.sh conversations.json <chat-id>
+```
+
+To populate a new vault, use [`ADOPT_EXISTING_DATA.md`](ADOPT_EXISTING_DATA.md) for existing files
+and [`ADOPT_FROM_HISTORY.md`](ADOPT_FROM_HISTORY.md) for agent history. Both workflows are additive
+and require review before importing material.
+
+## Verification
+
+```bash
+# Read-only installation report; warnings do not make the script fail.
+./verify-setup.sh
+./verify-setup.sh --json
+
+# Hook syntax, output contracts, and destructive-command guards.
+bash tests/hooks-smoke.sh
+
+# Codex manifest, installer, export, pre-compact snapshot, and adapter behavior.
+bash tests/codex-smoke.sh
+
+# Fresh-install and update behavior in a temporary HOME.
+bash tests/clean-room.sh
+```
+
+The GitHub Actions workflow runs the hook and clean-room suites on macOS and Ubuntu.
+
+## Updating and removal boundaries
+
+```bash
+# Pull with --ff-only when the checkout is clean, then reconcile links and shared vault infra.
+./update.sh
+
+# Reconcile without pulling from Git.
+./update.sh --no-pull
+```
+
+`update.sh` refreshes Claude settings with a timestamped backup, relinks current skills and hook
+scripts, prunes stale harness-owned symlinks, and syncs `System/scripts` and `System/templates` into
+the knowledge vault. It does not overwrite notes or force-merge `daily-jobs.yaml`.
+
+Codex assets are managed separately; rerun `./install-codex.sh` after pulling Codex-side changes.
+The repository does not ship an uninstall command. Remove installed links and copied configuration
+only after reviewing their targets and backups.
+
+## Security and privacy
+
+- File guards cover common secret files and key formats; command guards block a focused set of
+  destructive shell and Git patterns. They are defense in depth, not a sandbox.
+- Several hooks can change local state: post-edit checks may run tests, stop hooks may create a Git
+  stash, and exporters write local archives and logs.
+- `settings.json` and `hooks.json` control every session. Review them before installation and
+  restart the client after changes.
+- Secrets, native session caches, exported sessions, QMD models, and telemetry do not belong in
+  this repository. Use [`SECRETS.example.md`](SECRETS.example.md) as a placement guide.
+- No telemetry uploader is included. Optional third-party MCP servers, plugins, and semantic
+  memory sync have their own network and data-access implications.
 
 ## License
-MIT — see [LICENSE](LICENSE). The bundled `humanizer` skill carries its own MIT License.
+
+MIT. See [`LICENSE`](LICENSE). The bundled `humanizer` skill includes its own MIT license.
